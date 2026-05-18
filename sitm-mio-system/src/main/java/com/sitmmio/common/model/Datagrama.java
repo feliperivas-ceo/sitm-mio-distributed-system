@@ -1,18 +1,50 @@
 package com.sitmmio.common.model;
 
-import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "datagramas")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Datagrama {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     private String idBus;
     private String idRuta;
+
     private double latitud;
     private double longitud;
+
     private LocalDateTime timestamp;
+
+    @Enumerated(EnumType.STRING)
     private TipoEvento tipoEvento;
+
+    @Enumerated(EnumType.STRING)
     private Prioridad prioridad;
+
     private String estadoPuertas;
+
+    @Column(length = 1024)
     private String descripcion;
+
+    private String messageId;
+
+    @Column(length = 2048)
+    private String payload;
+
+    private LocalDateTime receivedAt;
+
+    private boolean procesado;
 
     public Datagrama(String idBus, String idRuta, double latitud, double longitud,
                      TipoEvento tipoEvento, Prioridad prioridad,
@@ -26,48 +58,17 @@ public class Datagrama {
         this.prioridad = prioridad;
         this.estadoPuertas = estadoPuertas;
         this.descripcion = descripcion;
-    }
-
-    public String getIdBus() {
-        return idBus;
-    }
-
-    public String getIdRuta() {
-        return idRuta;
-    }
-
-    public double getLatitud() {
-        return latitud;
-    }
-
-    public double getLongitud() {
-        return longitud;
-    }
-
-    public LocalDateTime getTimestamp() {
-        return timestamp;
-    }
-
-    public TipoEvento getTipoEvento() {
-        return tipoEvento;
-    }
-
-    public Prioridad getPrioridad() {
-        return prioridad;
-    }
-
-    public String getEstadoPuertas() {
-        return estadoPuertas;
-    }
-
-    public String getDescripcion() {
-        return descripcion;
+        this.messageId = UUID.randomUUID().toString();
+        this.receivedAt = null;
+        this.procesado = false;
+        this.payload = descripcion;
     }
 
     @Override
     public String toString() {
         return "Datagrama{" +
-                "idBus='" + idBus + '\'' +
+                "id=" + id +
+                ", idBus='" + idBus + '\'' +
                 ", idRuta='" + idRuta + '\'' +
                 ", latitud=" + latitud +
                 ", longitud=" + longitud +
@@ -76,6 +77,8 @@ public class Datagrama {
                 ", prioridad=" + prioridad +
                 ", estadoPuertas='" + estadoPuertas + '\'' +
                 ", descripcion='" + descripcion + '\'' +
+                ", messageId='" + messageId + '\'' +
+                ", procesado=" + procesado +
                 '}';
     }
 }
