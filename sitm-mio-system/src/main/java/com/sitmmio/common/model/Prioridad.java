@@ -1,6 +1,8 @@
-
 package com.sitmmio.common.model;
 
-public class Prioridad {
-    
+public enum Prioridad {
+    BAJA,
+    MEDIA,
+    ALTA,
+    CRITICA
 }
