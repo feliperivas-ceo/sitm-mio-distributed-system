@@ -22,8 +22,8 @@ public class EventoService {
     }
 
     public List<Evento> obtenerPorBus(String busId) {
-        return repo.findByBusId(busId);
-    }
+    return repo.findByBusId(busId);
+}
 
     public List<Evento> obtenerNoAcknowledged() {
         return repo.findByAckEnviadoFalse();

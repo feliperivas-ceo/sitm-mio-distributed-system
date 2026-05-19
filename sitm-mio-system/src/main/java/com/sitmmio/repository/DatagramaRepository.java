@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface DatagramaRepository extends JpaRepository<Datagrama, Long> {
-    List<Datagrama> findByBusId(String busId);
+    List<Datagrama> findByIdBus(String busId);
     List<Datagrama> findByProcesadoFalse();
 }

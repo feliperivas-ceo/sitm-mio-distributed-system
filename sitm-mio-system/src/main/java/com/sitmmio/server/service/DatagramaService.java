@@ -22,7 +22,7 @@ public class DatagramaService {
     }
 
     public List<Datagrama> obtenerPorBus(String busId) {
-        return repo.findByBusId(busId);
+        return repo.findByIdBus(busId);
     }
 
     public List<Datagrama> obtenerNoProcesados() {

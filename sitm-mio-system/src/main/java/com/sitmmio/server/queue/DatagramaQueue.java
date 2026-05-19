@@ -24,10 +24,10 @@ public class DatagramaQueue {
     public void encolar(Datagrama datagrama) {
         boolean aceptado = eventQueue.offerNonBlocking(datagrama);
         if (!aceptado) {
-            log.warn("Cola llena — descartando datagrama de bus={}", datagrama.getBusId());
+            log.warn("Cola llena — descartando datagrama de bus={}", datagrama.getIdBus());
         } else {
             log.debug("Datagrama encolado: bus={} tipo={} [size={}]",
-                    datagrama.getBusId(), datagrama.getTipoEvento(), eventQueue.size());
+                    datagrama.getIdBus(), datagrama.getTipoEvento(), eventQueue.size());
         }
     }
 
