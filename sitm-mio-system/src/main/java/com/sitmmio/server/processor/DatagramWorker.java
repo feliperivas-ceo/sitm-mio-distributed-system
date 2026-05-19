@@ -50,14 +50,14 @@ public class DatagramWorker implements Runnable {
 
         } catch (Exception e) {
             log.error("Error procesando datagrama busId={}: {}",
-                    datagrama.getBusId(), e.getMessage(), e);
+                    datagrama.getIdBus(), e.getMessage(), e);
         }
     }
 
     // --- extracción de campos (Req 11) ---
 
     private String extraerBusId() {
-        return datagrama.getBusId() != null ? datagrama.getBusId() : "DESCONOCIDO";
+        return datagrama.getIdBus() != null ? datagrama.getIdBus() : "DESCONOCIDO";
     }
 
     private double extraerLatitud() {
@@ -68,11 +68,12 @@ public class DatagramWorker implements Runnable {
         return datagrama.getLongitud();
     }
 
-    private String extraerTimestamp() {
-        if (datagrama.getTimestamp() != null && !datagrama.getTimestamp().isBlank()) {
-            return datagrama.getTimestamp();
-        }
-        LocalDateTime received = datagrama.getReceivedAt();
-        return received != null ? DateUtils.format(received) : DateUtils.nowString();
+   private String extraerTimestamp() {
+    if (datagrama.getTimestamp() != null) {
+        return DateUtils.format(datagrama.getTimestamp());
     }
+
+    LocalDateTime received = datagrama.getReceivedAt();
+    return received != null ? DateUtils.format(received) : DateUtils.nowString();
+}
 }

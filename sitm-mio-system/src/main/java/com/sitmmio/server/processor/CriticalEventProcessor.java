@@ -19,17 +19,17 @@ public class CriticalEventProcessor implements EventProcessor {
     @Override
     public boolean acepta(Datagrama datagrama) {
         return datagrama.getTipoEvento() == TipoEvento.EMERGENCY
-                || datagrama.getPrioridad() == Prioridad.CRITICAL;
+                || datagrama.getPrioridad() == Prioridad.CRITICA;
     }
 
     @Override
     public String procesar(Datagrama datagrama) {
         log.error("*** EVENTO CRÍTICO *** bus={} tipo={} msg={}",
-                datagrama.getBusId(),
+                datagrama.getIdBus(),
                 datagrama.getTipoEvento(),
                 datagrama.getMessageId());
         // Aquí se integraría: WebSocket push al dashboard, SMS, etc.
         return String.format("CRITICO[%s] tipo=%s",
-                datagrama.getBusId(), datagrama.getTipoEvento());
+                datagrama.getIdBus(), datagrama.getTipoEvento());
     }
 }

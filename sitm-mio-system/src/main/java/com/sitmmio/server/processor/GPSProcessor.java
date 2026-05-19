@@ -21,7 +21,7 @@ public class GPSProcessor implements EventProcessor {
 
     @Override
     public boolean acepta(Datagrama datagrama) {
-        return datagrama.getTipoEvento() == TipoEvento.GPS_UPDATE;
+        return datagrama.getTipoEvento() == TipoEvento.POSICION_GPS;
     }
 
     @Override
@@ -32,11 +32,11 @@ public class GPSProcessor implements EventProcessor {
                             && lon >= LON_MIN && lon <= LON_MAX;
         if (!dentroDeZona) {
             log.warn("GPS fuera de zona Cali: bus={} lat={} lon={}",
-                    datagrama.getBusId(), lat, lon);
+                    datagrama.getIdBus(), lat, lon);
         }
         log.debug("GPS procesado: bus={} lat={} lon={} zona={}",
-                datagrama.getBusId(), lat, lon, dentroDeZona);
+                datagrama.getIdBus(), lat, lon, dentroDeZona);
         return String.format("GPS[%s] lat=%.5f lon=%.5f zona=%b",
-                datagrama.getBusId(), lat, lon, dentroDeZona);
+                datagrama.getIdBus(), lat, lon, dentroDeZona);
     }
 }

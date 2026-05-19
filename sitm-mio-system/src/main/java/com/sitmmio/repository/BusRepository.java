@@ -8,6 +8,6 @@ import java.util.List;
 
 @Repository
 public interface BusRepository extends JpaRepository<Bus, String> {
-    List<Bus> findByRutaAsignada(String ruta);
+    List<Bus> findByIdRuta(String idRuta);
     List<Bus> findByEstado(Bus.EstadoBus estado);
 }

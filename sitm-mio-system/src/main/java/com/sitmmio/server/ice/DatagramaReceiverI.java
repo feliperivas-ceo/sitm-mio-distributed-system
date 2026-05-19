@@ -52,17 +52,20 @@ public class DatagramaReceiverI extends _DatagramaReceiverDisp {
     }
 
     private Datagrama convertir(DatagramaICE ice) {
-        return Datagrama.builder()
-                .busId(ice.busId)
-                .latitud(ice.latitud)
-                .longitud(ice.longitud)
-                .timestamp(ice.timestamp)
-                .tipoEvento(TipoEvento.fromString(ice.tipoEvento))
-                .prioridad(Prioridad.fromNivel(ice.prioridad))
-                .messageId(ice.messageId)
-                .payload(ice.payload)
-                .receivedAt(LocalDateTime.now())
-                .procesado(false)
-                .build();
-    }
+    return Datagrama.builder()
+            .idBus(ice.busId)
+            .idRuta(null)
+            .latitud(ice.latitud)
+            .longitud(ice.longitud)
+            .timestamp(LocalDateTime.now())
+            .tipoEvento(TipoEvento.fromString(ice.tipoEvento))
+            .prioridad(Prioridad.fromNivel(ice.prioridad))
+            .estadoPuertas(null)
+            .descripcion(ice.payload)
+            .messageId(ice.messageId)
+            .payload(ice.payload)
+            .receivedAt(LocalDateTime.now())
+            .procesado(false)
+            .build();
+}
 }
