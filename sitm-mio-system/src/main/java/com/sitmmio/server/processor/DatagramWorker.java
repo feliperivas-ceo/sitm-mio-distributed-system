@@ -50,7 +50,7 @@ public class DatagramWorker implements Runnable {
 
         } catch (Exception e) {
             log.error("Error procesando datagrama busId={}: {}",
-                    datagrama.getIdBus(), e.getMessage(), e);
+                    datagrama.getId(), e.getMessage(), e);
         }
     }
 
@@ -68,12 +68,14 @@ public class DatagramWorker implements Runnable {
         return datagrama.getLongitud();
     }
 
-   private String extraerTimestamp() {
-    if (datagrama.getTimestamp() != null) {
-        return DateUtils.format(datagrama.getTimestamp());
-    }
+    private String extraerTimestamp() {
+        LocalDateTime ts = datagrama.getTimestamp();
 
-    LocalDateTime received = datagrama.getReceivedAt();
-    return received != null ? DateUtils.format(received) : DateUtils.nowString();
-}
+        if (ts != null) {
+            return DateUtils.format(ts);
+        }
+        
+        LocalDateTime received = datagrama.getReceivedAt();
+        return received != null ? DateUtils.format(received) : DateUtils.nowString();
+    }
 }
