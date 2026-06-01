@@ -146,7 +146,7 @@ async function cargarZonasFiltro() {
   } catch (_) {}
 }
 
-// --- Vista de Zonas (Controlador) ---
+// --- Vista de Zonas (Controlador) - Mejora 5 ---
 async function cargarVistaZonas() {
   const container = document.getElementById('zonaInfo');
   if (!currentUser) return;
@@ -155,82 +155,93 @@ async function cargarVistaZonas() {
     cargarAdminZonas();
     return;
   }
-  if (!currentUser.zonaId) {
-    container.innerHTML = '<div class="alert alert-info">No tienes zona asignada. Contacta al administrador.</div>';
-    return;
-  }
   try {
-    const [busRes, estRes] = await Promise.all([
-      fetch('/api/buses/filter?rutaId='),
-      fetch('/api/estaciones')
-    ]);
-    const buses = await busRes.json();
-    const estaciones = await estRes.json();
+    const res = await fetch('/api/zona/mi-zona');
+    const data = await res.json();
+    if (!data.tieneZona) {
+      container.innerHTML = '<div class="alert alert-info"><i class="bi bi-info-circle me-2"></i>No tienes zona asignada. Contacta al administrador.</div>';
+      return;
+    }
+    const zona = data.zona;
+    const buses = data.buses || [];
+    const estaciones = data.estaciones || [];
+    const stats = data.estadisticas || {};
 
     container.innerHTML = `
-      <div class="card mb-3 border-primary">
-        <div class="card-header bg-primary text-white fw-bold">
-          <i class="bi bi-geo-alt-fill me-2"></i>${currentUser.zonaNombre || 'Mi Zona'}
+      <div class="card mb-3 border-primary shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold d-flex align-items-center gap-2">
+          <i class="bi bi-geo-alt-fill"></i>
+          <span>${zona.nombre}</span>
+          <small class="ms-2 fw-normal opacity-75">${zona.descripcion || ''}</small>
         </div>
         <div class="card-body">
           <div class="row g-3">
-            <div class="col-md-4">
-              <div class="card text-center kpi-card primary">
-                <div class="card-body">
-                  <div class="fs-2 fw-bold text-primary">${buses.length}</div>
-                  <div class="text-muted small">Buses en zona</div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center kpi-card primary h-100">
+                <div class="card-body py-2">
+                  <div class="fs-3 fw-bold text-primary">${stats.totalBuses || buses.length}</div>
+                  <div class="text-muted small">Total buses</div>
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
-              <div class="card text-center kpi-card success">
-                <div class="card-body">
-                  <div class="fs-2 fw-bold text-success">${buses.filter(b => b.estado === 'ACTIVO' || b.estado === 'EN_RUTA').length}</div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center kpi-card success h-100">
+                <div class="card-body py-2">
+                  <div class="fs-3 fw-bold text-success">${stats.busesActivos || 0}</div>
                   <div class="text-muted small">Buses activos</div>
                 </div>
               </div>
             </div>
-            <div class="col-md-4">
-              <div class="card text-center kpi-card warning">
-                <div class="card-body">
-                  <div class="fs-2 fw-bold text-warning">${estaciones.length}</div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center kpi-card warning h-100">
+                <div class="card-body py-2">
+                  <div class="fs-3 fw-bold text-warning">${stats.totalEstaciones || estaciones.length}</div>
                   <div class="text-muted small">Estaciones</div>
+                </div>
+              </div>
+            </div>
+            <div class="col-6 col-md-3">
+              <div class="card text-center kpi-card danger h-100">
+                <div class="card-body py-2">
+                  <div class="fs-3 fw-bold text-danger">${buses.filter(b => b.prioridad === 'ALTA').length}</div>
+                  <div class="text-muted small">Alertas activas</div>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-      <h5 class="mt-3">Buses en zona</h5>
+      <h5 class="mt-3"><i class="bi bi-bus-front me-2"></i>Buses en mi zona</h5>
       <div class="table-responsive">
-        <table class="table table-sm table-hover">
-          <thead class="table-dark"><tr><th>ID</th><th>Placa</th><th>Ruta</th><th>Estado</th><th>Prioridad</th></tr></thead>
-          <tbody>${buses.slice(0,10).map(b => `
-            <tr>
+        <table class="table table-sm table-hover align-middle">
+          <thead class="table-dark"><tr><th>ID</th><th>Placa</th><th>Ruta</th><th>Estado</th><th>Prioridad</th><th>Vel.</th></tr></thead>
+          <tbody>${buses.map(b => `
+            <tr class="${b.prioridad === 'ALTA' ? 'table-danger' : b.prioridad === 'MEDIA' ? 'table-warning' : ''}">
               <td><code>${b.id}</code></td>
-              <td>${b.numeroPlaca}</td>
-              <td>${b.rutaId || '-'}</td>
+              <td>${b.placa || b.numeroPlaca || '-'}</td>
+              <td><span class="badge bg-secondary">${b.rutaId || '-'}</span></td>
               <td>${estadoBadge(b.estado)}</td>
               <td>${prioridadBadge(b.prioridad)}</td>
+              <td>${b.velocidad ? b.velocidad.toFixed(1) + ' km/h' : '-'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
       </div>
-      <h5 class="mt-3">Estaciones / Paradas</h5>
+      <h5 class="mt-3"><i class="bi bi-signpost-2 me-2"></i>Estaciones / Paradas</h5>
       <div class="table-responsive">
         <table class="table table-sm table-hover">
           <thead class="table-dark"><tr><th>Nombre</th><th>Tipo</th><th>Ruta</th></tr></thead>
           <tbody>${estaciones.map(e => `
             <tr>
               <td>${e.nombre}</td>
-              <td><span class="badge ${e.tipo === 'ESTACION_MAYOR' ? 'bg-dark' : 'bg-secondary'}">${e.tipo}</span></td>
-              <td>${e.ruta ? e.ruta.id : '-'}</td>
+              <td><span class="badge ${e.tipo === 'ESTACION_MAYOR' ? 'bg-dark' : 'bg-secondary'}">${e.tipo || '-'}</span></td>
+              <td>${e.rutaId || '-'}</td>
             </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
   } catch (ex) {
-    container.innerHTML = '<div class="alert alert-danger">Error cargando información de zona</div>';
+    container.innerHTML = '<div class="alert alert-danger"><i class="bi bi-exclamation-triangle me-2"></i>Error cargando información de zona</div>';
   }
 }
 
