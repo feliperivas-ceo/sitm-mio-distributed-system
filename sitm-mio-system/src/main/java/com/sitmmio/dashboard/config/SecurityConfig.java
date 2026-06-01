@@ -36,8 +36,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Públicos - sin autenticación
                 .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
-                .requestMatchers("/css/**", "/js/**", "/*.html", "/favicon.ico").permitAll()
+                .requestMatchers("/", "/index.html", "/public.html", "/css/**", "/js/**", "/*.html", "/favicon.ico").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/ws/**", "/bus-monitor/**").permitAll()
                 // Solo ADMIN
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
