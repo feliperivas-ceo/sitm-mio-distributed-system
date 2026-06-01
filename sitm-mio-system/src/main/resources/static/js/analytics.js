@@ -7,12 +7,13 @@ let chartBuses = null;
 
 async function cargarAnalitica() {
   try {
-    const [resumen, velocidad, prioridades, meses, buses] = await Promise.all([
+    const [resumen, velocidad, prioridades, meses, buses, rutas] = await Promise.all([
       fetch('/api/analytics/resumen').then(r => r.json()),
       fetch('/api/analytics/velocidad-por-ruta').then(r => r.json()),
       fetch('/api/analytics/eventos-criticos').then(r => r.json()),
       fetch('/api/analytics/eventos-por-mes').then(r => r.json()),
-      fetch('/api/analytics/buses-activos').then(r => r.json())
+      fetch('/api/analytics/buses-activos').then(r => r.json()),
+      fetch('/api/rutas').then(r => r.json()).catch(() => [])
     ]);
 
     renderizarKPIs(resumen);
@@ -20,10 +21,32 @@ async function cargarAnalitica() {
     renderizarChartPrioridad(prioridades);
     renderizarChartMeses(meses.eventosPorMes || {});
     renderizarChartBuses(buses);
+    renderizarTablaRutas(rutas, velocidad.velocidadPorRuta || {}, resumen);
   } catch (e) {
     document.getElementById('kpiCards').innerHTML =
       '<div class="col-12"><div class="alert alert-warning">Error cargando datos de analítica</div></div>';
   }
+}
+
+function renderizarTablaRutas(rutas, velocidades, resumen) {
+  const tbody = document.getElementById('tablaRutasBody');
+  if (!tbody || !rutas.length) return;
+  const busesTotal = resumen.totalBuses || 0;
+  tbody.innerHTML = rutas.map(r => {
+    const vel = velocidades[r.id];
+    const velStr = vel ? vel.toFixed(1) + ' km/h' : 'N/A';
+    const busesEst = Math.ceil(busesTotal / (rutas.length || 1));
+    const estado = vel > 40 ? '<span class="badge bg-success">Normal</span>'
+      : vel > 20 ? '<span class="badge bg-warning text-dark">Moderado</span>'
+      : vel ? '<span class="badge bg-danger">Lento</span>'
+      : '<span class="badge bg-secondary">Sin datos</span>';
+    return `<tr>
+      <td><span class="badge me-1" style="background:${r.color || '#666'}">${r.id}</span>${r.nombre}</td>
+      <td>${velStr}</td>
+      <td>~${busesEst}</td>
+      <td>${estado}</td>
+    </tr>`;
+  }).join('');
 }
 
 function renderizarKPIs(data) {
