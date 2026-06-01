@@ -258,15 +258,18 @@ async function cargarAdminZonas() {
     const users = await usersRes.json();
     const container = document.getElementById('zonasList');
     if (!container) return;
+    const controladoresSinZona = users.filter(u => u.rol === 'CONTROLADOR' && !u.zona);
     container.innerHTML = zonas.map(z => {
       const controladores = users.filter(u => u.zona && u.zona.id === z.id);
+      const optsCtrl = controladoresSinZona.map(c =>
+        `<option value="${c.id}">${c.nombre} (${c.username})</option>`).join('');
       return `
         <div class="col-md-4">
           <div class="card zona-card shadow-sm h-100">
-            <div class="card-header bg-primary text-white d-flex justify-content-between">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
               <strong>${z.nombre}</strong>
               <div>
-                <button class="btn btn-sm btn-light me-1" onclick="editarZona(${z.id}, '${z.nombre}', '${z.descripcion || ''}')">
+                <button class="btn btn-sm btn-light me-1" onclick="editarZona(${z.id}, '${z.nombre}', '${(z.descripcion||'').replace(/'/g,'\\&#39;')}')">
                   <i class="bi bi-pencil"></i>
                 </button>
                 <button class="btn btn-sm btn-danger" onclick="eliminarZona(${z.id})">
@@ -274,13 +277,30 @@ async function cargarAdminZonas() {
                 </button>
               </div>
             </div>
-            <div class="card-body">
+            <div class="card-body d-flex flex-column">
               <p class="text-muted small">${z.descripcion || 'Sin descripción'}</p>
-              <div class="fw-bold mb-2"><i class="bi bi-people me-1"></i>Controladores (${controladores.length})</div>
-              ${controladores.length === 0 ? '<p class="text-muted small">Sin controladores asignados</p>' :
-                controladores.map(c => `<span class="badge bg-info text-dark me-1 mb-1">${c.nombre}</span>`).join('')}
-              <div class="fw-bold mt-2 mb-1"><i class="bi bi-signpost-2 me-1"></i>Rutas asociadas</div>
-              ${rutas.map(r => `<span class="badge me-1 mb-1" style="background:${r.color}">${r.id}</span>`).join('')}
+              <div class="fw-bold mb-1"><i class="bi bi-people me-1"></i>Controladores (${controladores.length})</div>
+              <div class="mb-2">
+                ${controladores.length === 0 ? '<p class="text-muted small mb-1">Sin controladores asignados</p>' :
+                  controladores.map(c => `
+                    <span class="badge bg-info text-dark me-1 mb-1">
+                      ${c.nombre}
+                      <button class="btn-close btn-close-sm ms-1" style="font-size:.5rem" title="Desasignar"
+                        onclick="desasignarControlador(${c.id})"></button>
+                    </span>`).join('')}
+              </div>
+              ${optsCtrl ? `
+              <div class="input-group input-group-sm mb-2">
+                <select id="ctrlAsignar_${z.id}" class="form-select form-select-sm">
+                  <option value="">Asignar controlador...</option>
+                  ${optsCtrl}
+                </select>
+                <button class="btn btn-sm btn-outline-primary" onclick="asignarControlador(${z.id}, 'ctrlAsignar_${z.id}')">
+                  <i class="bi bi-person-plus"></i>
+                </button>
+              </div>` : '<p class="text-muted small">Todos los controladores tienen zona</p>'}
+              <div class="fw-bold mt-1 mb-1"><i class="bi bi-signpost-2 me-1"></i>Rutas en sistema</div>
+              <div>${rutas.map(r => `<span class="badge me-1 mb-1" style="background:${r.color || '#666'}">${r.id}</span>`).join('')}</div>
             </div>
           </div>
         </div>`;
@@ -323,6 +343,28 @@ async function eliminarZona(id) {
   if (!confirm('¿Eliminar esta zona?')) return;
   await fetch(`/api/zonas/${id}`, { method: 'DELETE' });
   cargarAdminZonas();
+}
+
+async function asignarControlador(zonaId, selectId) {
+  const sel = document.getElementById(selectId);
+  const userId = sel ? sel.value : '';
+  if (!userId) return;
+  try {
+    const res = await fetch(`/api/zonas/${zonaId}/controladores/${userId}`, { method: 'POST' });
+    const data = await res.json();
+    alert(data.mensaje || 'Controlador asignado');
+    cargarAdminZonas();
+  } catch (_) { alert('Error asignando controlador'); }
+}
+
+async function desasignarControlador(userId) {
+  if (!confirm('¿Desasignar este controlador de su zona?')) return;
+  try {
+    const res = await fetch(`/api/zonas/controladores/${userId}`, { method: 'DELETE' });
+    const data = await res.json();
+    alert(data.mensaje || 'Controlador desasignado');
+    cargarAdminZonas();
+  } catch (_) { alert('Error desasignando controlador'); }
 }
 
 // --- Gestión de Usuarios ---
