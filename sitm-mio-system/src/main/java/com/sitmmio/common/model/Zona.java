@@ -6,15 +6,15 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "rutas")
+@Table(name = "zonas")
 @Getter
 @Setter
 @NoArgsConstructor
-public class Ruta {
+public class Zona {
 
     @Id
-    private String id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private String nombre;
     private String descripcion;
-    private String color;
 }
