@@ -173,9 +173,61 @@ body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
   margin-bottom: 8px;
   animation: slideIn 0.3s ease;
 }
-.alerta-accidente { border-color: #E74C3C; background: #FFEBEE; }
+/* Mejora 12: Alertas críticas con código de color */
+/* Rojo = ACCIDENTE | Naranja = CONGESTION | Amarillo = MEDIA | Verde = GPS_NORMAL */
+.alerta-critico  { border-color: #C0392B; background: #FFCDD2; }
+.alerta-alto     { border-color: #E74C3C; background: #FFEBEE; }
+.alerta-accidente { border-color: #C0392B; background: #FFCDD2; }
 .alerta-congestion { border-color: #E67E22; background: #FFF3E0; }
-.alerta-media { border-color: #F1C40F; background: #FFFDE7; }
+.alerta-media    { border-color: #F1C40F; background: #FFFDE7; }
+.alerta-normal   { border-color: #27AE60; background: #F1F8E9; }
+
+/* Marcador de bus parpadeante para accidentes */
+.bus-accidente-pulse {
+  animation: pulseRed 1.2s infinite;
+}
+@keyframes pulseRed {
+  0%   { box-shadow: 0 0 0 0 rgba(192,57,43,.7); }
+  70%  { box-shadow: 0 0 0 12px rgba(192,57,43,0); }
+  100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+}
+
+/* Panel de alertas en la barra lateral del mapa */
+.alertas-panel {
+  position: absolute;
+  bottom: 100px;
+  left: 10px;
+  z-index: 999;
+  width: 260px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+  font-size: 0.78rem;
+}
+.alertas-panel-header {
+  background: #2C3E50;
+  color: white;
+  padding: 6px 10px;
+  font-weight: bold;
+  border-radius: 8px 8px 0 0;
+}
+.alerta-item {
+  padding: 5px 10px;
+  border-bottom: 1px solid #eee;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.alerta-item:last-child { border-bottom: none; }
+
+/* Barra de estado de alertas en navbar */
+#contadorAlertas {
+  cursor: pointer;
+  transition: transform .15s;
+}
+#contadorAlertas:hover { transform: scale(1.1); }
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }
