@@ -14,9 +14,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-/** Consulta pública sin autenticación (R14) */
+/**
+ * API pública para ciudadanos - sin autenticación requerida (R14) - Mejora 10
+ * Endpoints accesibles desde cualquier aplicación ciudadana.
+ */
 @RestController
 @RequestMapping("/api/public")
+@CrossOrigin(origins = "*")
 public class PublicController {
 
     @Autowired private RutaRepository rutaRepo;
