@@ -72,25 +72,36 @@ function renderizarBuses(buses) {
     `${buses.length} bus${buses.length !== 1 ? 'es' : ''} mostrado${buses.length !== 1 ? 's' : ''}`;
 }
 
+// --- Mejora 3: íconos y colores diferenciados por tipo (R4) ---
+
 function crearMarcadorBus(bus) {
-  const clase = obtenerClaseBus(bus);
+  const color = colorBus(bus);
   const icono = L.divIcon({
     className: '',
-    html: `<div class="bus-marker-icon ${clase}" title="${bus.id}">🚌</div>`,
-    iconSize: [28, 28],
-    iconAnchor: [14, 14]
+    html: `<div class="bus-marker-icon" style="background:${color};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);" title="${bus.id} - ${bus.rutaId || ''}">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="white">
+               <path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 2 0v-1h10v1a1 1 0 0 0 2 0v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11V7h14v4H5z"/>
+             </svg>
+           </div>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13]
   });
   const marker = L.marker([bus.latitud, bus.longitud], { icon: icono });
   marker.on('click', () => mostrarDetalleBus(bus.id));
   return marker;
 }
 
+function colorBus(bus) {
+  if (bus.ultimoEvento === 'ACCIDENTE' || bus.prioridad === 'ALTA') return '#C0392B';
+  if (bus.ultimoEvento === 'CONGESTION' || bus.prioridad === 'MEDIA') return '#E67E22';
+  if (bus.rutaColor) return bus.rutaColor;
+  return '#2980B9';
+}
+
 function obtenerClaseBus(bus) {
   if (bus.ultimoEvento === 'ACCIDENTE' || bus.prioridad === 'ALTA') return 'bus-accidente';
   if (bus.ultimoEvento === 'CONGESTION' || bus.prioridad === 'MEDIA') return 'bus-congestion';
   if (bus.ultimoEvento === 'GPS_NORMAL') return 'bus-gps';
-  if (bus.prioridad === 'BAJA') return 'bus-baja';
-  if (bus.rutaColor) return 'bus-baja';
   return 'bus-gps';
 }
 
@@ -168,26 +179,36 @@ async function cargarEstaciones() {
   } catch (_) {}
 }
 
+// Marcador diferenciado: estaciones grandes con ícono cuadrado, paradas con círculo (Mejora 3)
 function crearMarcadorEstacion(estacion) {
   const esMayor = estacion.tipo === 'ESTACION_MAYOR';
+  const svgEstacion = `<svg width="16" height="16" viewBox="0 0 24 24" fill="white">
+    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+  </svg>`;
+  const svgParada = `<svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+    <circle cx="12" cy="12" r="8"/>
+  </svg>`;
+
   const icono = L.divIcon({
     className: '',
     html: `<div style="
-      width:${esMayor ? 20 : 14}px;
-      height:${esMayor ? 20 : 14}px;
-      background:${esMayor ? '#2C3E50' : '#95A5A6'};
-      border-radius:${esMayor ? '3px' : '50%'};
+      width:${esMayor ? 22 : 14}px;
+      height:${esMayor ? 22 : 14}px;
+      background:${esMayor ? '#1A252F' : '#7F8C8D'};
+      border-radius:${esMayor ? '4px' : '50%'};
       border:2px solid white;
-      box-shadow:0 2px 4px rgba(0,0,0,0.3);">
+      box-shadow:0 2px 5px rgba(0,0,0,.4);
+      display:flex;align-items:center;justify-content:center;">
+      ${esMayor ? svgEstacion : svgParada}
     </div>`,
-    iconSize: [esMayor ? 20 : 14, esMayor ? 20 : 14],
-    iconAnchor: [esMayor ? 10 : 7, esMayor ? 10 : 7]
+    iconSize: [esMayor ? 22 : 14, esMayor ? 22 : 14],
+    iconAnchor: [esMayor ? 11 : 7, esMayor ? 11 : 7]
   });
   const marker = L.marker([estacion.latitud, estacion.longitud], { icon: icono });
   marker.bindPopup(`
     <strong>${estacion.nombre}</strong><br>
-    Tipo: <b>${estacion.tipo === 'ESTACION_MAYOR' ? '🏢 Estación Mayor' : '🚏 Parada'}</b><br>
-    Ruta: ${estacion.ruta ? estacion.ruta.id : '-'}
+    <span style="font-size:.9em">${estacion.tipo === 'ESTACION_MAYOR' ? '🏢 <b>Estación Mayor</b>' : '🚏 <b>Parada</b>'}</span><br>
+    Ruta: <b>${estacion.ruta ? estacion.ruta.id : '-'}</b>
   `);
   return marker;
 }
@@ -282,13 +303,16 @@ function actualizarPosicionesBuses(actualizaciones) {
     if (entry && upd.lat && upd.lon) {
       entry.marker.setLatLng([upd.lat, upd.lon]);
       entry.data = { ...entry.data, ...upd, latitud: upd.lat, longitud: upd.lon };
-      // Actualizar clase del ícono según nuevo estado
-      const clase = obtenerClaseBus({ ...entry.data, ultimoEvento: upd.ultimoEvento, prioridad: upd.prioridad });
+      // Actualizar ícono con nuevo color según estado
+      const busActualizado = { ...entry.data, ultimoEvento: upd.ultimoEvento, prioridad: upd.prioridad };
+      const color = colorBus(busActualizado);
       const nuevoIcono = L.divIcon({
         className: '',
-        html: `<div class="bus-marker-icon ${clase}" title="${upd.id}">🚌</div>`,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14]
+        html: `<div class="bus-marker-icon" style="background:${color};border:2px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);" title="${upd.id}">
+                 <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><path d="M4 16c0 .88.39 1.67 1 2.22V20a1 1 0 0 0 2 0v-1h10v1a1 1 0 0 0 2 0v-1.78c.61-.55 1-1.34 1-2.22V6c0-3.5-3.58-4-8-4s-8 .5-8 4zm3.5 1c-.83 0-1.5-.67-1.5-1.5S6.67 14 7.5 14s1.5.67 1.5 1.5S8.33 17 7.5 17zm9 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5zM5 11V7h14v4H5z"/></svg>
+               </div>`,
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
       });
       entry.marker.setIcon(nuevoIcono);
       // Alerta si prioridad alta
