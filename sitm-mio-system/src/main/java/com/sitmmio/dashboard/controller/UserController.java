@@ -145,7 +145,44 @@ public class UserController {
         }).orElse(ResponseEntity.notFound().build());
     }
 
-    /** Asignar ruta a controlador por zona - vista de administración (R8) */
+    /** Activar o desactivar usuario (R3) - Mejora 8 */
+    @PatchMapping("/users/{id}/activo")
+    public ResponseEntity<?> toggleActivo(@PathVariable Long id, @RequestBody Map<String, Boolean> body) {
+        return usuarioRepo.findById(id).map(u -> {
+            u.setActivo(body.getOrDefault("activo", !Boolean.TRUE.equals(u.getActivo())));
+            usuarioRepo.save(u);
+            return ResponseEntity.ok(Map.of(
+                "mensaje", "Usuario " + (u.getActivo() ? "activado" : "desactivado"),
+                "activo", u.getActivo()
+            ));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Cambiar rol de usuario (R3) - Mejora 8 */
+    @PatchMapping("/users/{id}/rol")
+    public ResponseEntity<?> cambiarRol(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return usuarioRepo.findById(id).map(u -> {
+            try {
+                u.setRol(Rol.valueOf(body.get("rol")));
+                usuarioRepo.save(u);
+                return ResponseEntity.ok((Object) Map.of(
+                    "mensaje", "Rol actualizado a " + u.getRol().name(),
+                    "username", u.getUsername(),
+                    "rol", u.getRol().name()
+                ));
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body((Object) Map.of("error", "Rol inválido: " + body.get("rol")));
+            }
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Listado de roles disponibles */
+    @GetMapping("/roles")
+    public List<String> getRoles() {
+        return List.of("ADMIN", "CONTROLADOR");
+    }
+
+    /** Resumen de usuarios para administración (R8) */
     @GetMapping("/admin/resumen")
     public Map<String, Object> resumenAdmin() {
         long admins = usuarioRepo.findByRol(Rol.ADMIN).size();
@@ -153,11 +190,13 @@ public class UserController {
         long zonas = zonaRepo.count();
         long sinZona = usuarioRepo.findByRol(Rol.CONTROLADOR).stream()
             .filter(u -> u.getZona() == null).count();
+        long activos = usuarioRepo.findAll().stream().filter(u -> Boolean.TRUE.equals(u.getActivo())).count();
         return Map.of(
             "totalAdmins", admins,
             "totalControladores", controladores,
             "totalZonas", zonas,
-            "controladoresSinZona", sinZona
+            "controladoresSinZona", sinZona,
+            "usuariosActivos", activos
         );
     }
 }
