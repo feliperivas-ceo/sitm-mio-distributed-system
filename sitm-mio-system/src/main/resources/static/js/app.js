@@ -44,18 +44,62 @@ function showDashboard() {
   document.getElementById('loginScreen').classList.add('d-none');
   document.getElementById('mainApp').classList.remove('d-none');
   document.getElementById('navUser').textContent = currentUser.nombre;
+
+  const esAdmin = currentUser.rol === 'ADMIN';
   const badge = document.getElementById('navRolBadge');
-  badge.textContent = currentUser.rol;
-  badge.className = 'badge ms-1 ' + (currentUser.rol === 'ADMIN' ? 'bg-danger' : 'bg-info');
+  badge.textContent = esAdmin ? 'ADMIN' : 'CONTROLADOR';
+  badge.className = 'badge ms-1 ' + (esAdmin ? 'bg-danger' : 'bg-success');
+
+  // Navbar diferenciada por rol
+  const navbar = document.querySelector('.navbar');
+  if (navbar) {
+    navbar.className = 'navbar navbar-dark px-3 py-2 ' + (esAdmin ? 'bg-danger' : 'bg-primary');
+  }
+
+  // Mostrar zona del controlador en navbar
+  const navZona = document.getElementById('navZona');
+  if (navZona) {
+    if (!esAdmin && currentUser.zonaNombre) {
+      navZona.textContent = '📍 ' + currentUser.zonaNombre;
+      navZona.classList.remove('d-none');
+    } else {
+      navZona.classList.add('d-none');
+    }
+  }
 
   // Mostrar/ocultar elementos de admin
   document.querySelectorAll('.admin-only').forEach(el => {
-    el.style.display = currentUser.rol === 'ADMIN' ? '' : 'none';
+    el.style.display = esAdmin ? '' : 'none';
   });
 
+  // Ocultar tab de zona asignada para admin (tienen panel de admin zonas)
+  const tabZonas = document.querySelector('[data-tab="zonas"]');
+  if (tabZonas && esAdmin) {
+    tabZonas.querySelector('.sidebar-label') && (tabZonas.querySelector('.sidebar-label').textContent = 'Admin Zonas');
+  }
+
+  mostrarBienvenida(currentUser.nombre, esAdmin);
   cargarRutas();
   cargarZonasFiltro();
   showTab('mapa');
+}
+
+function mostrarBienvenida(nombre, esAdmin) {
+  const toast = document.createElement('div');
+  toast.className = 'toast align-items-center text-white border-0 show position-fixed';
+  toast.style.cssText = 'bottom:20px;right:20px;z-index:9999;min-width:260px;' +
+    'background:' + (esAdmin ? '#C0392B' : '#27AE60');
+  toast.innerHTML = `
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-${esAdmin ? 'shield-fill' : 'person-badge'} me-2"></i>
+        Bienvenido, <strong>${nombre}</strong><br>
+        <small>${esAdmin ? 'Acceso completo de administrador' : 'Vista de controlador activa'}</small>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.closest('.toast').remove()"></button>
+    </div>`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
 }
 
 async function logout() {
