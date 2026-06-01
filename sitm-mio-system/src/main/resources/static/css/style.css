@@ -234,6 +234,32 @@ body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
   to { transform: translateX(0); opacity: 1; }
 }
 
+/* Leyenda del mapa - Mejora 3 */
+.mapa-leyenda {
+  background: white;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  font-size: 0.78rem;
+  line-height: 1.8;
+}
+.mapa-leyenda b { display: block; margin-bottom: 4px; font-size: 0.82rem; }
+.leyenda-item { display: flex; align-items: center; gap: 6px; }
+.leyenda-icono {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid white;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+  flex-shrink: 0;
+}
+.bus-leyenda-accidente { background: #C0392B; border-radius: 50%; }
+.bus-leyenda-congestion { background: #E67E22; border-radius: 50%; }
+.bus-leyenda-normal { background: #2980B9; border-radius: 50%; }
+.estacion-leyenda { background: #1A252F; border-radius: 3px; }
+.parada-leyenda { background: #7F8C8D; border-radius: 50%; width: 10px; height: 10px; }
+
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar { width: 50px; }
