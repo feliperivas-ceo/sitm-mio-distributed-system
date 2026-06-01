@@ -20,6 +20,18 @@ public class ZonaController {
     @Autowired private BusRepository busRepo;
     @Autowired private EstacionRepository estacionRepo;
 
+    /** Lista de zonas accesible a todos los autenticados (para filtros en el mapa) */
+    @GetMapping("/todas")
+    public List<java.util.Map<String, Object>> getTodasZonas() {
+        return zonaRepo.findAll().stream()
+            .map(z -> java.util.Map.<String, Object>of(
+                "id", z.getId(),
+                "nombre", z.getNombre(),
+                "descripcion", z.getDescripcion() != null ? z.getDescripcion() : ""
+            ))
+            .collect(Collectors.toList());
+    }
+
     /** Zona y recursos asignados al controlador autenticado */
     @GetMapping("/mi-zona")
     public ResponseEntity<?> getMiZona(Authentication auth) {

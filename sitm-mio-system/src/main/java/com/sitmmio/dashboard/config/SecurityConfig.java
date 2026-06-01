@@ -38,6 +38,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**", "/api/public/**").permitAll()
                 .requestMatchers("/", "/index.html", "/public.html", "/css/**", "/js/**", "/*.html", "/favicon.ico").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
+                .requestMatchers("/ws/**", "/bus-monitor/**").permitAll()
+                // Endpoints usados por la vista pública ciudadana (sin autenticación)
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/buses", "/api/rutas", "/api/estaciones").permitAll()
                 // Solo ADMIN
                 .requestMatchers("/api/users/**").hasRole("ADMIN")
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")

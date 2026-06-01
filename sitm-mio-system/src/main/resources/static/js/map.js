@@ -34,8 +34,27 @@ function initMap() {
   };
   L.control.layers(null, overlays, { collapsed: false, position: 'topright' }).addTo(mapa);
 
+  agregarLeyendaMapa();
   cargarDatosMapa();
   conectarWebSocket();
+}
+
+// --- Mejora 3: Leyenda visual con iconos diferenciados (R4) ---
+function agregarLeyendaMapa() {
+  const legend = L.control({ position: 'bottomleft' });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'mapa-leyenda');
+    div.innerHTML = `
+      <b>Leyenda</b>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-accidente"></span> Accidente/Alta prioridad</div>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-congestion"></span> Congestión/Media prioridad</div>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-normal"></span> Bus en operación</div>
+      <div class="leyenda-item"><span class="leyenda-icono estacion-leyenda"></span> Estación Mayor</div>
+      <div class="leyenda-item"><span class="leyenda-icono parada-leyenda"></span> Parada</div>
+    `;
+    return div;
+  };
+  legend.addTo(mapa);
 }
 
 // --- Cargar datos iniciales ---
@@ -297,12 +316,14 @@ function mostrarUltimaActualizacion() {
 }
 
 function actualizarPosicionesBuses(actualizaciones) {
-  if (!Array.isArray(actualizaciones)) return;
-  actualizaciones.forEach(upd => {
+  const lista = Array.isArray(actualizaciones) ? actualizaciones : [actualizaciones];
+  lista.forEach(upd => {
+    const lat = upd.latitud ?? upd.lat;
+    const lon = upd.longitud ?? upd.lon;
     const entry = busMarkers[upd.id];
-    if (entry && upd.lat && upd.lon) {
-      entry.marker.setLatLng([upd.lat, upd.lon]);
-      entry.data = { ...entry.data, ...upd, latitud: upd.lat, longitud: upd.lon };
+    if (entry && lat && lon) {
+      entry.marker.setLatLng([lat, lon]);
+      entry.data = { ...entry.data, ...upd, latitud: lat, longitud: lon };
       // Actualizar ícono con nuevo color según estado
       const busActualizado = { ...entry.data, ultimoEvento: upd.ultimoEvento, prioridad: upd.prioridad };
       const color = colorBus(busActualizado);
@@ -323,25 +344,57 @@ function actualizarPosicionesBuses(actualizaciones) {
   });
 }
 
-// --- Filtros del mapa (R4, R9, R11) ---
-function aplicarFiltros() {
+// --- Filtros del mapa (R4, R9, R11) - Mejora 4 ---
+async function aplicarFiltros() {
+  const rutaId = document.getElementById('filtroRuta')?.value || '';
+  const prioridad = document.getElementById('filtroPrioridad')?.value || '';
+  const estado = document.getElementById('filtroEstado')?.value || '';
+  const tipoEvento = document.getElementById('filtroTipoEvento')?.value || '';
+  const zonaId = document.getElementById('filtroZona')?.value || '';
+  const busTexto = (document.getElementById('filtroBus')?.value || '').toLowerCase();
+
   const params = {};
-  const rutaId = document.getElementById('filtroRuta').value;
-  const prioridad = document.getElementById('filtroPrioridad').value;
-  const estado = document.getElementById('filtroEstado').value;
-  const tipoEvento = document.getElementById('filtroTipoEvento').value;
   if (rutaId) params.rutaId = rutaId;
   if (prioridad) params.prioridad = prioridad;
   if (estado) params.estado = estado;
   if (tipoEvento) params.tipoEvento = tipoEvento;
-  cargarBuses(params);
+
+  try {
+    let url = '/api/buses';
+    const qs = new URLSearchParams(params).toString();
+    if (qs) url += '?' + qs;
+    const res = await fetch(url);
+    let buses = await res.json();
+
+    // Filtro por zona: obtener buses de esa zona
+    if (zonaId) {
+      try {
+        const zRes = await fetch(`/api/zona/${zonaId}`);
+        if (zRes.ok) {
+          const zData = await zRes.json();
+          const zonaRutas = new Set((zData.buses || []).map(b => b.rutaId || b.id));
+          buses = buses.filter(b => zonaRutas.has(b.rutaId || b.id));
+        }
+      } catch (_) {}
+    }
+
+    // Filtro por texto de bus (ID o placa)
+    if (busTexto) {
+      buses = buses.filter(b =>
+        (b.id || '').toLowerCase().includes(busTexto) ||
+        (b.numeroPlaca || '').toLowerCase().includes(busTexto)
+      );
+    }
+
+    renderizarBuses(buses);
+  } catch (_) {}
 }
 
 function limpiarFiltros() {
-  document.getElementById('filtroRuta').value = '';
-  document.getElementById('filtroPrioridad').value = '';
-  document.getElementById('filtroEstado').value = '';
-  document.getElementById('filtroTipoEvento').value = '';
+  const ids = ['filtroRuta', 'filtroPrioridad', 'filtroEstado', 'filtroTipoEvento', 'filtroZona'];
+  ids.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const fb = document.getElementById('filtroBus');
+  if (fb) fb.value = '';
   cargarBuses();
 }
 
