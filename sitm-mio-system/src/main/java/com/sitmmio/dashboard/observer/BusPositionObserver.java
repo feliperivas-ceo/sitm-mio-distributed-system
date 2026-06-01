@@ -1,5 +1,5 @@
 package com.sitmmio.dashboard.observer;
 
-public class BusPositionObserver {
-    
+public interface BusPositionObserver {
+    void onBusPositionUpdate(String busId, double lat, double lon);
 }

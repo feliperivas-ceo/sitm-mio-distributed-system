@@ -1,9 +1,9 @@
 package com.sitmmio.repository;
 
-import com.sitmmio.common.model.Ruta;
+import com.sitmmio.common.model.Zona;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 @Repository
-public interface RutaRepository extends JpaRepository<Ruta, String> {
+public interface ZonaRepository extends JpaRepository<Zona, Long> {
 }
