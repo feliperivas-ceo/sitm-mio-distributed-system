@@ -2,13 +2,13 @@ package com.sitmmio.common.model;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Table(name = "datagramas")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -21,8 +21,8 @@ public class Datagrama {
     private String idBus;
     private String idRuta;
 
-    private double latitud;
-    private double longitud;
+    private Double latitud;
+    private Double longitud;
 
     private LocalDateTime timestamp;
 
@@ -43,7 +43,6 @@ public class Datagrama {
     private String payload;
 
     private LocalDateTime receivedAt;
-
     private boolean procesado;
 
     public Datagrama(String idBus, String idRuta, double latitud, double longitud,

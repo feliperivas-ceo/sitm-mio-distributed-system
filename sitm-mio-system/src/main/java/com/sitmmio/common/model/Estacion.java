@@ -1,25 +1,27 @@
 package com.sitmmio.common.model;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
+import lombok.Setter;
 
 @Entity
 @Table(name = "estaciones")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Estacion {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private String nombre;
-    private double latitud;
-    private double longitud;
-    private String rutaAsociada;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ruta_id")
+    private Ruta ruta;
+
+    private Double latitud;
+    private Double longitud;
+    private String tipo;  // PARADA o ESTACION_MAYOR
 }

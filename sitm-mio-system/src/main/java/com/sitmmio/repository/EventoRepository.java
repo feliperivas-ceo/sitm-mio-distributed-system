@@ -1,13 +1,36 @@
 package com.sitmmio.repository;
 
 import com.sitmmio.common.model.Evento;
+import com.sitmmio.common.model.Prioridad;
+import com.sitmmio.common.model.TipoEvento;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface EventoRepository extends JpaRepository<Evento, Long> {
-    List<Evento> findByBusId(String busId);
+
+    // Uso underscore para forzar traversal: bus_id -> bus.id
+    List<Evento> findByBus_IdOrderByTimestampDesc(String busId);
+
+    // ruta.id: Spring Data resuelve rutaId -> ruta.id correctamente
+    List<Evento> findByRuta_IdOrderByTimestampDesc(String rutaId);
+
+    List<Evento> findByPrioridad(Prioridad prioridad);
+    List<Evento> findByTipoEvento(TipoEvento tipoEvento);
+    List<Evento> findByTimestampBetween(LocalDateTime from, LocalDateTime to);
+    long countByPrioridad(Prioridad prioridad);
     List<Evento> findByAckEnviadoFalse();
+
+    @Query("SELECT e FROM Evento e WHERE e.bus.id = :busId ORDER BY e.timestamp DESC")
+    List<Evento> findByBusId(@Param("busId") String busId);
+
+    @Query("SELECT e.ruta.id, AVG(e.bus.velocidad) FROM Evento e WHERE e.bus.velocidad IS NOT NULL GROUP BY e.ruta.id")
+    List<Object[]> avgVelocidadPorRuta();
+
+    @Query("SELECT FUNCTION('MONTH', e.timestamp), COUNT(e) FROM Evento e WHERE e.timestamp IS NOT NULL GROUP BY FUNCTION('MONTH', e.timestamp)")
+    List<Object[]> eventosPorMes();
 }

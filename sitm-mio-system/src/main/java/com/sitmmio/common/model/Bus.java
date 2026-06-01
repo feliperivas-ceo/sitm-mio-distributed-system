@@ -1,50 +1,56 @@
 package com.sitmmio.common.model;
 
 import jakarta.persistence.*;
-import lombok.*;
-
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "buses")
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Bus {
 
     @Id
-    private String idBus;
+    private String id;
+    private String numeroPlaca;
 
-    private String placa;
-    private String idRuta;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "ruta_id")
+    private Ruta ruta;
 
-    private double latitud;
-    private double longitud;
-
-    private LocalDateTime ultimaActualizacion;
+    private Double latitud;
+    private Double longitud;
+    private LocalDateTime ultimoTimestamp;
 
     @Enumerated(EnumType.STRING)
-    private EstadoBus estado;
+    private TipoEvento ultimoEvento;
 
-    public Bus(String idBus, String idRuta, double latitud, double longitud) {
-        this.idBus = idBus;
-        this.idRuta = idRuta;
-        this.latitud = latitud;
-        this.longitud = longitud;
-        this.ultimaActualizacion = LocalDateTime.now();
-        this.estado = EstadoBus.ACTIVO;
-    }
+    @Enumerated(EnumType.STRING)
+    private Prioridad prioridad;
 
-    public void actualizarPosicion(double latitud, double longitud) {
-        this.latitud = latitud;
-        this.longitud = longitud;
-        this.ultimaActualizacion = LocalDateTime.now();
+    private String estado;
+    private Double velocidad;
+
+    // ── Métodos de compatibilidad con API de origin/main ─────────────────────
+
+    public String getIdBus() { return id; }
+    public void setIdBus(String idBus) { this.id = idBus; }
+
+    public String getIdRuta() { return ruta != null ? ruta.getId() : null; }
+
+    public void setUltimaActualizacion(LocalDateTime ts) { this.ultimoTimestamp = ts; }
+    public LocalDateTime getUltimaActualizacion() { return ultimoTimestamp; }
+
+    public void setEstado(String estado) { this.estado = estado; }
+
+    public void setEstado(EstadoBus estadoBus) {
+        this.estado = estadoBus != null ? estadoBus.name() : null;
     }
 
     public enum EstadoBus {
-        ACTIVO,
-        INACTIVO,
-        EMERGENCIA
+        ACTIVO, INACTIVO, EMERGENCIA
     }
 }

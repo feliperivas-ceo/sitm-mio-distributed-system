@@ -1,1 +1,1 @@
-IdBus,latitud,longitud,timestamp,tipoEvento,prioridad,messageId,receivedAt
+busId,latitud,longitud,timestamp,tipoEvento,prioridad,messageId,receivedAt

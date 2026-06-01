@@ -1,31 +1,36 @@
 package com.sitmmio.dashboard.service;
 
-import com.sitmmio.dashboard.model.Usuario;
-import com.sitmmio.dashboard.model.Rol;
+import com.sitmmio.common.model.Usuario;
+import com.sitmmio.repository.UsuarioRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Collections;
 
 @Service
-public class AuthService {
+public class AuthService implements UserDetailsService {
 
-    private final Map<String, Usuario> usuarios = new HashMap<>();
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
-    public AuthService() {
-        usuarios.put("admin", new Usuario("admin", "1234", Rol.ADMIN));
-        usuarios.put("operador", new Usuario("operador", "1234", Rol.OPERADOR));
-        usuarios.put("cco", new Usuario("cco", "1234", Rol.CONTROLADOR));
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Usuario usuario = usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+
+        return new User(
+            usuario.getUsername(),
+            usuario.getPassword(),
+            Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name()))
+        );
     }
 
-    public Usuario login(String username, String password) {
-
-        Usuario user = usuarios.get(username);
-
-        if (user != null && user.getPassword().equals(password)) {
-            return user;
-        }
-
-        return null;
+    public Usuario findByUsername(String username) {
+        return usuarioRepository.findByUsername(username)
+            .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
     }
 }
