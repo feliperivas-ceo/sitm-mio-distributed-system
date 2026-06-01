@@ -222,12 +222,18 @@ body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
 }
 .alerta-item:last-child { border-bottom: none; }
 
-/* Barra de estado de alertas en navbar */
+/* Barra de estado de alertas en navbar - Mejora 12 */
 #contadorAlertas {
   cursor: pointer;
   transition: transform .15s;
 }
 #contadorAlertas:hover { transform: scale(1.1); }
+
+@keyframes pulseAlert {
+  0%   { box-shadow: 0 0 0 0 rgba(192,57,43,.8); }
+  70%  { box-shadow: 0 0 0 8px rgba(192,57,43,0); }
+  100% { box-shadow: 0 0 0 0 rgba(192,57,43,0); }
+}
 
 @keyframes slideIn {
   from { transform: translateX(100%); opacity: 0; }

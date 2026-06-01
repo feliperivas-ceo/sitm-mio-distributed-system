@@ -714,22 +714,45 @@ async function mostrarPanelAlertas() {
   } catch (_) {}
 }
 
-/** Actualizar el contador de alertas en la navbar */
+/** Actualizar el contador de alertas en la navbar - Mejora 12 */
 async function actualizarContadorAlertas() {
   try {
     const res = await fetch('/api/alertas/resumen');
     const data = await res.json();
-    const total = (data.critico || 0) + (data.alto || 0);
+    const criticas = (data.critico || 0) + (data.alto || 0);
+    const medias = data.medio || 0;
+    const total = criticas + medias;
     const badge = document.getElementById('contadorAlertas');
     const num = document.getElementById('numAlertas');
     if (badge && num) {
       num.textContent = total;
       if (total > 0) {
         badge.classList.remove('d-none');
-        badge.className = total > 0 ? 'badge bg-danger me-1' : 'badge bg-warning text-dark me-1';
+        if (criticas > 0) {
+          badge.className = 'badge bg-danger me-1';
+          badge.style.animation = 'pulseAlert 1s infinite';
+        } else {
+          badge.className = 'badge bg-warning text-dark me-1';
+          badge.style.animation = '';
+        }
+        badge.title = `${criticas} críticas, ${medias} medias`;
       } else {
         badge.classList.add('d-none');
+        badge.style.animation = '';
       }
+    }
+    // Mostrar alertas criticas en mapa automáticamente
+    if (criticas > 0) {
+      const alertasRes = await fetch('/api/alertas/criticas');
+      const alertas = await alertasRes.json();
+      alertas.slice(0, 3).forEach(a => {
+        if (a.latitud) {
+          mostrarAlertaCritica({
+            id: a.busId, rutaId: a.rutaId, estado: a.estado,
+            ultimoEvento: a.ultimoEvento, prioridad: a.prioridad
+          });
+        }
+      });
     }
   } catch (_) {}
 }
