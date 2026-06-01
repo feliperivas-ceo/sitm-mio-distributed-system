@@ -123,6 +123,10 @@
             <option value="MOTOR">Motor</option>
             <option value="PUERTAS">Puertas</option>
           </select>
+          <select id="filtroZona" class="form-select form-select-sm" style="width:130px" onchange="aplicarFiltros()">
+            <option value="">Toda zona</option>
+          </select>
+          <input id="filtroBus" class="form-control form-control-sm" style="width:130px" placeholder="Buscar bus..." oninput="aplicarFiltros()">
           <button class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltros()">
             <i class="bi bi-x-circle"></i> Limpiar
           </button>

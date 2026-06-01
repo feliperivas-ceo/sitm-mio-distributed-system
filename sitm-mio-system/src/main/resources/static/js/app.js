@@ -54,6 +54,7 @@ function showDashboard() {
   });
 
   cargarRutas();
+  cargarZonasFiltro();
   showTab('mapa');
 }
 
@@ -124,6 +125,23 @@ async function cargarRutas() {
           sel.appendChild(opt);
         }
       });
+    });
+  } catch (_) {}
+}
+
+// --- Zonas (para filtro del mapa - Mejora 4) ---
+async function cargarZonasFiltro() {
+  try {
+    const res = await fetch('/api/zona/todas');
+    if (!res.ok) return;
+    const zonas = await res.json();
+    const sel = document.getElementById('filtroZona');
+    if (!sel) return;
+    zonas.forEach(z => {
+      const opt = document.createElement('option');
+      opt.value = z.id;
+      opt.textContent = z.nombre;
+      sel.appendChild(opt);
     });
   } catch (_) {}
 }
