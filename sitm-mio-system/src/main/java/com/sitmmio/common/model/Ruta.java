@@ -17,4 +17,6 @@ public class Ruta {
     private String nombre;
     private String descripcion;
     private String color;
+    private String origen;
+    private String destino;
 }

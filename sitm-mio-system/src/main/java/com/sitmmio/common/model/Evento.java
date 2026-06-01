@@ -36,4 +36,14 @@ public class Evento {
     private LocalDateTime timestamp;
     private Boolean estadoProcesado;
     private String descripcion;
+    private boolean ackEnviado;
+
+    public Evento(TipoEvento tipoEvento, Prioridad prioridad, String descripcion) {
+        this.tipoEvento = tipoEvento;
+        this.prioridad = prioridad;
+        this.descripcion = descripcion;
+        this.timestamp = java.time.LocalDateTime.now();
+        this.estadoProcesado = false;
+        this.ackEnviado = false;
+    }
 }
