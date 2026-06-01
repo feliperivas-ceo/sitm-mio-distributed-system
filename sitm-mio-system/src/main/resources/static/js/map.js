@@ -34,8 +34,27 @@ function initMap() {
   };
   L.control.layers(null, overlays, { collapsed: false, position: 'topright' }).addTo(mapa);
 
+  agregarLeyendaMapa();
   cargarDatosMapa();
   conectarWebSocket();
+}
+
+// --- Mejora 3: Leyenda visual con iconos diferenciados (R4) ---
+function agregarLeyendaMapa() {
+  const legend = L.control({ position: 'bottomleft' });
+  legend.onAdd = function () {
+    const div = L.DomUtil.create('div', 'mapa-leyenda');
+    div.innerHTML = `
+      <b>Leyenda</b>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-accidente"></span> Accidente/Alta prioridad</div>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-congestion"></span> Congestión/Media prioridad</div>
+      <div class="leyenda-item"><span class="leyenda-icono bus-leyenda-normal"></span> Bus en operación</div>
+      <div class="leyenda-item"><span class="leyenda-icono estacion-leyenda"></span> Estación Mayor</div>
+      <div class="leyenda-item"><span class="leyenda-icono parada-leyenda"></span> Parada</div>
+    `;
+    return div;
+  };
+  legend.addTo(mapa);
 }
 
 // --- Cargar datos iniciales ---
