@@ -65,6 +65,17 @@ public class MapController {
         return buses.stream().map(MapView::fromBus).collect(Collectors.toList());
     }
 
+    /** Buses en alerta (prioridad ALTA o evento ACCIDENTE/CONGESTION) - Filtro crítico (R9, R11) */
+    @GetMapping("/buses/alertas")
+    public List<MapView> getBusesEnAlerta() {
+        return busRepo.findAll().stream()
+            .filter(b -> b.getPrioridad() == Prioridad.ALTA
+                || b.getUltimoEvento() == TipoEvento.ACCIDENTE
+                || b.getUltimoEvento() == TipoEvento.CONGESTION)
+            .map(MapView::fromBus)
+            .collect(Collectors.toList());
+    }
+
     /** Todas las rutas */
     @GetMapping("/rutas")
     public List<Ruta> getAllRutas() {
