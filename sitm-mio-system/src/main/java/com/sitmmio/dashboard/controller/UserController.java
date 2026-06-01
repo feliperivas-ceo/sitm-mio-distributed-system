@@ -118,14 +118,46 @@ public class UserController {
         return ResponseEntity.ok(Map.of("mensaje", "Zona eliminada"));
     }
 
-    /** Asignar ruta a zona (R8) */
-    @PostMapping("/zonas/{zonaId}/rutas/{rutaId}/controladores/{userId}")
-    public ResponseEntity<?> asignarControladorRuta(
+    /** Asignar controlador a zona (R8) */
+    @PostMapping("/zonas/{zonaId}/controladores/{userId}")
+    public ResponseEntity<?> asignarControladorAZona(
             @PathVariable Long zonaId,
             @PathVariable Long userId) {
         return usuarioRepo.findById(userId).map(u -> {
-            zonaRepo.findById(zonaId).ifPresent(u::setZona);
-            return ResponseEntity.ok(usuarioRepo.save(u));
+            return zonaRepo.findById(zonaId).map(zona -> {
+                u.setZona(zona);
+                return ResponseEntity.ok((Object) Map.of(
+                    "mensaje", "Controlador " + u.getNombre() + " asignado a zona " + zona.getNombre(),
+                    "usuario", u.getUsername(),
+                    "zona", zona.getNombre()
+                ));
+            }).orElse(ResponseEntity.notFound().build());
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Desasignar controlador de su zona (R8) */
+    @DeleteMapping("/zonas/controladores/{userId}")
+    public ResponseEntity<?> desasignarControlador(@PathVariable Long userId) {
+        return usuarioRepo.findById(userId).map(u -> {
+            u.setZona(null);
+            usuarioRepo.save(u);
+            return ResponseEntity.ok((Object) Map.of("mensaje", "Controlador desasignado de su zona"));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
+    /** Asignar ruta a controlador por zona - vista de administración (R8) */
+    @GetMapping("/admin/resumen")
+    public Map<String, Object> resumenAdmin() {
+        long admins = usuarioRepo.findByRol(Rol.ADMIN).size();
+        long controladores = usuarioRepo.findByRol(Rol.CONTROLADOR).size();
+        long zonas = zonaRepo.count();
+        long sinZona = usuarioRepo.findByRol(Rol.CONTROLADOR).stream()
+            .filter(u -> u.getZona() == null).count();
+        return Map.of(
+            "totalAdmins", admins,
+            "totalControladores", controladores,
+            "totalZonas", zonas,
+            "controladoresSinZona", sinZona
+        );
     }
 }
