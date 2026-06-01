@@ -11,20 +11,19 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Random;
 
 @Service
 public class BusTrackingService {
 
     private final DatagramaRepository datagramaRepository;
-
     private final BusRepository busRepository;
-
     private final MapController mapController;
+    private final Random random = new Random();
 
     public BusTrackingService(DatagramaRepository datagramaRepository,
                               BusRepository busRepository,
                               MapController mapController) {
-
         this.datagramaRepository = datagramaRepository;
         this.busRepository = busRepository;
         this.mapController = mapController;
@@ -58,11 +57,23 @@ public class BusTrackingService {
             d.setProcesado(true);
             datagramaRepository.save(d);
 
-            System.out.println(
-                    "GPS actualizado -> "
-                    + bus.getIdBus()
-            );
+            System.out.println("GPS actualizado -> " + bus.getIdBus());
         }
+    }
+
+    /** Simula movimiento y transmite posiciones actuales cada 5s por WebSocket (Mejora 2) */
+    @Scheduled(fixedRate = 5000)
+    public void transmitirPosicionesActuales() {
+        List<Bus> buses = busRepository.findAll();
+        for (Bus bus : buses) {
+            if (bus.getLatitud() != null && bus.getLongitud() != null && "ACTIVO".equals(bus.getEstado())) {
+                bus.setLatitud(bus.getLatitud() + (random.nextDouble() - 0.5) * 0.0008);
+                bus.setLongitud(bus.getLongitud() + (random.nextDouble() - 0.5) * 0.0008);
+                bus.setUltimaActualizacion(LocalDateTime.now());
+                busRepository.save(bus);
+            }
+        }
+        mapController.broadcastAllBuses();
     }
 }
 
