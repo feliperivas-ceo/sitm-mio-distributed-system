@@ -411,30 +411,71 @@ async function desasignarControlador(userId) {
   } catch (_) { alert('Error desasignando controlador'); }
 }
 
-// --- Gestión de Usuarios ---
+// --- Gestión de Usuarios - Mejora 8 ---
 async function cargarUsuarios() {
   try {
     const res = await fetch('/api/users');
     const users = await res.json();
     const tbody = document.getElementById('usuariosTable');
-    tbody.innerHTML = users.map(u => `
-      <tr>
+    tbody.innerHTML = users.map(u => {
+      const esAdmin = u.rol === 'ADMIN';
+      const activo = Boolean(u.activo);
+      return `
+      <tr class="${!activo ? 'table-secondary text-muted' : ''}">
         <td>${u.id}</td>
         <td><code>${u.username}</code></td>
-        <td>${u.nombre}</td>
-        <td>${u.email || '-'}</td>
-        <td>${u.rol === 'ADMIN' ? '<span class="badge bg-danger">ADMIN</span>' : '<span class="badge bg-info text-dark">CONTROLADOR</span>'}</td>
-        <td>${u.zona ? u.zona.nombre : '<span class="text-muted">-</span>'}</td>
-        <td>${u.activo ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-x-circle-fill text-danger"></i>'}</td>
+        <td>${u.nombre || '-'}</td>
+        <td class="small">${u.email || '-'}</td>
         <td>
-          <button class="btn btn-sm btn-outline-primary me-1" onclick="editarUsuario(${JSON.stringify(u).replace(/"/g,'&quot;')})">
+          <span class="badge ${esAdmin ? 'bg-danger' : 'bg-primary'}">${u.rol}</span>
+          <button class="btn btn-sm btn-link p-0 ms-1" title="Cambiar rol"
+            onclick="cambiarRol(${u.id}, '${esAdmin ? 'CONTROLADOR' : 'ADMIN'}')">
+            <i class="bi bi-arrow-left-right small"></i>
+          </button>
+        </td>
+        <td>${u.zona ? '<span class="badge bg-secondary">' + u.zona.nombre + '</span>' : '<span class="text-muted small">-</span>'}</td>
+        <td>
+          <button class="btn btn-sm ${activo ? 'btn-success' : 'btn-outline-secondary'}"
+            onclick="toggleActivo(${u.id}, ${activo})" title="${activo ? 'Desactivar' : 'Activar'}">
+            <i class="bi bi-${activo ? 'check-circle-fill' : 'x-circle-fill'}"></i>
+            ${activo ? 'Activo' : 'Inactivo'}
+          </button>
+        </td>
+        <td>
+          <button class="btn btn-sm btn-outline-primary me-1" title="Editar"
+            onclick="editarUsuario(${JSON.stringify(u).replace(/"/g,'&quot;')})">
             <i class="bi bi-pencil"></i>
           </button>
-          <button class="btn btn-sm btn-outline-danger" onclick="eliminarUsuario(${u.id}, '${u.username}')">
+          <button class="btn btn-sm btn-outline-danger" title="Eliminar"
+            onclick="eliminarUsuario(${u.id}, '${u.username}')">
             <i class="bi bi-trash"></i>
           </button>
         </td>
-      </tr>`).join('');
+      </tr>`;
+    }).join('');
+  } catch (_) {}
+}
+
+async function toggleActivo(userId, estaActivo) {
+  try {
+    const res = await fetch(`/api/users/${userId}/activo`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ activo: !estaActivo })
+    });
+    if (res.ok) cargarUsuarios();
+  } catch (_) {}
+}
+
+async function cambiarRol(userId, nuevoRol) {
+  if (!confirm(`¿Cambiar rol a ${nuevoRol}?`)) return;
+  try {
+    const res = await fetch(`/api/users/${userId}/rol`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rol: nuevoRol })
+    });
+    if (res.ok) cargarUsuarios();
   } catch (_) {}
 }
 
