@@ -45,6 +45,11 @@
   <nav class="navbar navbar-dark bg-primary px-3 py-2">
     <span class="navbar-brand fw-bold"><i class="bi bi-bus-front-fill me-2"></i>SITM-MIO</span>
     <div class="d-flex align-items-center gap-3">
+      <!-- Indicador de actualización periódica (Mejora 2) -->
+      <span id="wsIndicador" class="badge bg-secondary me-1" title="Estado WebSocket">
+        <i class="bi bi-circle-fill" style="font-size:.5rem"></i> Conectando...
+      </span>
+      <span class="text-white small" id="ultimaActualizacion" title="Última actualización de posiciones"></span>
       <span class="text-white small"><i class="bi bi-person-circle me-1"></i><span id="navUser">-</span>
         <span id="navRolBadge" class="badge ms-1"></span>
       </span>
