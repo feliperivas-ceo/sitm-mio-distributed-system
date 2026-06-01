@@ -222,22 +222,57 @@ async function cargarRutasMapa() {
   } catch (_) {}
 }
 
-// --- WebSocket: actualización periódica (R4) ---
+// --- WebSocket: actualización periódica de posición de buses (R4) - Mejora 2 ---
+let wsConectado = false;
+
 function conectarWebSocket() {
   try {
     const socket = new SockJS('/ws');
     stompClient = Stomp.over(socket);
     stompClient.debug = null;
+
     stompClient.connect({}, () => {
+      wsConectado = true;
+      actualizarIndicadorWS(true);
+
       stompClient.subscribe('/topic/buses', (msg) => {
         const actualizaciones = JSON.parse(msg.body);
         actualizarPosicionesBuses(actualizaciones);
+        mostrarUltimaActualizacion();
       });
     }, () => {
-      // Reintentar en 5 segundos si falla
+      wsConectado = false;
+      actualizarIndicadorWS(false);
+      // Reintentar en 5 segundos si falla la conexión
       setTimeout(conectarWebSocket, 5000);
     });
-  } catch (_) {}
+  } catch (_) {
+    actualizarIndicadorWS(false);
+    setTimeout(conectarWebSocket, 5000);
+  }
+}
+
+function actualizarIndicadorWS(conectado) {
+  const ind = document.getElementById('wsIndicador');
+  if (!ind) return;
+  if (conectado) {
+    ind.className = 'badge bg-success me-1';
+    ind.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem"></i> En vivo';
+    ind.title = 'Actualización en tiempo real activa (cada 5 s)';
+  } else {
+    ind.className = 'badge bg-danger me-1';
+    ind.innerHTML = '<i class="bi bi-circle-fill" style="font-size:.5rem"></i> Sin conexión';
+    ind.title = 'Reconectando...';
+  }
+}
+
+function mostrarUltimaActualizacion() {
+  const el = document.getElementById('ultimaActualizacion');
+  if (el) {
+    const ahora = new Date();
+    el.textContent = `⟳ ${ahora.toLocaleTimeString('es-CO')}`;
+    el.title = 'Posiciones actualizadas el ' + ahora.toLocaleString('es-CO');
+  }
 }
 
 function actualizarPosicionesBuses(actualizaciones) {
