@@ -460,38 +460,110 @@ function tipoEventoBadge(tipo) {
   return `<span class="alert-badge ${map[tipo] || 'bg-secondary'}">${tipo || '-'}</span>`;
 }
 
-// --- Alertas críticas visuales ---
+// --- Alertas críticas visuales - Mejora 12 ---
+// Código de color: 🚨 Rojo=ACCIDENTE | 🟠 Naranja=CONGESTION | 🟡 Amarillo=MEDIA | 🟢 Verde=GPS_NORMAL
+
+let alertasMostradas = new Set();
+
 function mostrarAlertaCritica(bus) {
+  // Evitar duplicados dentro de 30 segundos
+  const key = bus.id + '_' + (bus.ultimoEvento || bus.prioridad);
+  if (alertasMostradas.has(key)) return;
+  alertasMostradas.add(key);
+  setTimeout(() => alertasMostradas.delete(key), 30000);
+
   let container = document.getElementById('alertasContainer');
   if (!container) {
     container = document.createElement('div');
     container.id = 'alertasContainer';
     document.body.appendChild(container);
   }
-  const tipo = bus.ultimoEvento || bus.prioridad;
-  let clase = '';
-  let icono = '';
-  let titulo = '';
-  if (tipo === 'ACCIDENTE' || bus.prioridad === 'ALTA') {
-    clase = 'alerta-accidente'; icono = '🚨'; titulo = 'ACCIDENTE';
-  } else if (tipo === 'CONGESTION' || bus.prioridad === 'MEDIA') {
-    clase = 'alerta-congestion'; icono = '⚠️'; titulo = 'CONGESTIÓN';
-  } else {
-    clase = 'alerta-media'; icono = '📍'; titulo = tipo;
-  }
+
+  const { clase, icono, titulo, color } = clasificarAlerta(bus);
 
   const toast = document.createElement('div');
   toast.className = `alert alerta-toast ${clase} d-flex align-items-start gap-2 py-2 px-3`;
+  toast.style.borderLeftColor = color;
   toast.innerHTML = `
-    <span style="font-size:1.2rem">${icono}</span>
+    <span style="font-size:1.3rem">${icono}</span>
     <div class="flex-fill">
-      <strong>${titulo}</strong> - Bus ${bus.id}<br>
-      <small class="text-muted">Ruta ${bus.rutaId || '?'} | ${bus.estado || ''}</small>
+      <strong style="color:${color}">${titulo}</strong> — Bus <code>${bus.id}</code><br>
+      <small class="text-muted">
+        Ruta: ${bus.rutaId || '?'} | Estado: ${bus.estado || '-'} | Evento: ${bus.ultimoEvento || '-'}
+      </small>
     </div>
     <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>`;
   container.prepend(toast);
-  setTimeout(() => { if (toast.parentElement) toast.remove(); }, 8000);
+
+  // Autolimpieza: 8s para accidentes, 12s para otros
+  const duracion = titulo === 'ACCIDENTE' ? 8000 : 12000;
+  setTimeout(() => { if (toast.parentElement) toast.remove(); }, duracion);
+}
+
+function clasificarAlerta(bus) {
+  const evento = bus.ultimoEvento;
+  const prioridad = bus.prioridad;
+  if (evento === 'ACCIDENTE') {
+    return { clase: 'alerta-accidente', icono: '🚨', titulo: 'ACCIDENTE', color: '#C0392B' };
+  }
+  if (prioridad === 'ALTA') {
+    return { clase: 'alerta-alto', icono: '🔴', titulo: 'PRIORIDAD ALTA', color: '#E74C3C' };
+  }
+  if (evento === 'CONGESTION' || prioridad === 'MEDIA') {
+    return { clase: 'alerta-congestion', icono: '🟠', titulo: 'CONGESTIÓN', color: '#E67E22' };
+  }
+  return { clase: 'alerta-media', icono: '🟡', titulo: evento || 'EVENTO', color: '#F39C12' };
+}
+
+/** Cargar y mostrar el panel de alertas activas */
+async function mostrarPanelAlertas() {
+  const panel = document.getElementById('alertasPanel');
+  const body = document.getElementById('alertasPanelBody');
+  if (!panel || !body) return;
+  try {
+    const res = await fetch('/api/alertas/criticas');
+    const alertas = await res.json();
+    panel.classList.remove('d-none');
+    if (alertas.length === 0) {
+      body.innerHTML = '<div class="p-2 text-muted text-center small">Sin alertas críticas activas</div>';
+      return;
+    }
+    body.innerHTML = alertas.map(a => `
+      <div class="alerta-item">
+        <span>${a.iconoAlerta}</span>
+        <div>
+          <strong style="color:${a.colorAlerta}">${a.nivelAlerta}</strong>
+          <span class="ms-1">Bus ${a.busId}</span><br>
+          <small class="text-muted">Ruta: ${a.rutaId || '-'} | ${a.ultimoEvento || '-'}</small>
+        </div>
+      </div>`).join('');
+  } catch (_) {}
+}
+
+/** Actualizar el contador de alertas en la navbar */
+async function actualizarContadorAlertas() {
+  try {
+    const res = await fetch('/api/alertas/resumen');
+    const data = await res.json();
+    const total = (data.critico || 0) + (data.alto || 0);
+    const badge = document.getElementById('contadorAlertas');
+    const num = document.getElementById('numAlertas');
+    if (badge && num) {
+      num.textContent = total;
+      if (total > 0) {
+        badge.classList.remove('d-none');
+        badge.className = total > 0 ? 'badge bg-danger me-1' : 'badge bg-warning text-dark me-1';
+      } else {
+        badge.classList.add('d-none');
+      }
+    }
+  } catch (_) {}
 }
 
 // Inicio
 checkSession();
+
+// Actualizar contador de alertas cada 10 segundos cuando está autenticado
+setInterval(() => {
+  if (currentUser) actualizarContadorAlertas();
+}, 10000);
