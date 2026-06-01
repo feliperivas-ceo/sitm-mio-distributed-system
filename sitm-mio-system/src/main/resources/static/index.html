@@ -258,18 +258,30 @@
       <!-- TAB: HISTORIAL DE EVENTOS -->
       <div id="tabEventos" class="tab-content p-4 d-none">
         <h4><i class="bi bi-clock-history me-2 text-primary"></i>Historial de Eventos</h4>
-        <div class="d-flex gap-2 mb-3 flex-wrap">
-          <select id="filtroEventoRuta" class="form-select form-select-sm" style="width:150px">
+        <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
+          <select id="filtroEventoRuta" class="form-select form-select-sm" style="width:140px">
             <option value="">Todas las rutas</option>
           </select>
           <select id="filtroEventoPrioridad" class="form-select form-select-sm" style="width:130px">
             <option value="">Toda prioridad</option>
-            <option value="ALTA">Alta</option>
-            <option value="MEDIA">Media</option>
-            <option value="BAJA">Baja</option>
+            <option value="ALTA">🔴 Alta</option>
+            <option value="MEDIA">🟡 Media</option>
+            <option value="BAJA">🟢 Baja</option>
           </select>
+          <select id="filtroEventoTipo" class="form-select form-select-sm" style="width:140px">
+            <option value="">Todo tipo</option>
+            <option value="GPS_NORMAL">GPS Normal</option>
+            <option value="CONGESTION">Congestión</option>
+            <option value="ACCIDENTE">Accidente</option>
+            <option value="MOTOR">Motor</option>
+            <option value="PUERTAS">Puertas</option>
+          </select>
+          <input id="filtroEventoBus" class="form-control form-control-sm" style="width:120px" placeholder="ID Bus...">
           <button class="btn btn-sm btn-primary" onclick="cargarEventos()">
             <i class="bi bi-search"></i> Filtrar
+          </button>
+          <button class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosEventos()">
+            <i class="bi bi-x-circle"></i> Limpiar
           </button>
         </div>
         <div class="table-responsive">

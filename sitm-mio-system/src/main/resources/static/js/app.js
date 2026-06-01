@@ -547,36 +547,54 @@ async function eliminarUsuario(id, username) {
   cargarUsuarios();
 }
 
-// --- Historial de Eventos ---
+// --- Historial de Eventos - Mejora 11 ---
 async function cargarEventos() {
   const rutaId = document.getElementById('filtroEventoRuta')?.value || '';
   const prioridad = document.getElementById('filtroEventoPrioridad')?.value || '';
+  const tipoEvento = document.getElementById('filtroEventoTipo')?.value || '';
+  const busId = (document.getElementById('filtroEventoBus')?.value || '').trim();
   try {
-    const res = await fetch('/api/eventos');
+    // Filtros por query params (server-side) para mejor rendimiento
+    const params = new URLSearchParams();
+    if (rutaId) params.append('rutaId', rutaId);
+    if (prioridad) params.append('prioridad', prioridad);
+    if (tipoEvento) params.append('tipoEvento', tipoEvento);
+    if (busId) params.append('busId', busId);
+    const res = await fetch('/api/eventos?' + params.toString());
     let eventos = await res.json();
-    if (rutaId) eventos = eventos.filter(e => e.ruta && e.ruta.id === rutaId);
-    if (prioridad) eventos = eventos.filter(e => e.prioridad === prioridad);
 
     const tbody = document.getElementById('eventosTable');
     const empty = document.getElementById('eventosEmpty');
     if (eventos.length === 0) {
       tbody.innerHTML = '';
-      empty.classList.remove('d-none');
+      if (empty) empty.classList.remove('d-none');
       return;
     }
-    empty.classList.add('d-none');
+    if (empty) empty.classList.add('d-none');
     tbody.innerHTML = eventos.map(e => `
       <tr class="event-${e.prioridad ? e.prioridad.toLowerCase() : 'baja'}">
-        <td>${e.timestamp ? new Date(e.timestamp).toLocaleString('es-CO') : '-'}</td>
-        <td><code>${e.bus ? e.bus.id : '-'}</code></td>
-        <td>${e.ruta ? e.ruta.id : '-'}</td>
+        <td class="small">${e.timestamp || '-'}</td>
+        <td><code>${e.busId || '-'}</code>${e.busPlaca ? '<br><small class="text-muted">' + e.busPlaca + '</small>' : ''}</td>
+        <td><span class="badge bg-secondary">${e.rutaId || '-'}</span></td>
         <td>${tipoEventoBadge(e.tipoEvento)}</td>
         <td>${prioridadBadge(e.prioridad)}</td>
-        <td>${e.latitud ? e.latitud.toFixed(4) : '-'}</td>
-        <td>${e.longitud ? e.longitud.toFixed(4) : '-'}</td>
-        <td>${e.estadoProcesado ? '<i class="bi bi-check-circle-fill text-success"></i>' : '<i class="bi bi-clock text-warning"></i>'}</td>
+        <td class="small">${e.latitud ? (+e.latitud).toFixed(4) : '-'}</td>
+        <td class="small">${e.longitud ? (+e.longitud).toFixed(4) : '-'}</td>
+        <td>${e.estadoProcesado
+          ? '<span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Procesado</span>'
+          : '<span class="badge bg-warning text-dark"><i class="bi bi-clock me-1"></i>Pendiente</span>'}</td>
       </tr>`).join('');
   } catch (_) {}
+}
+
+function limpiarFiltrosEventos() {
+  ['filtroEventoRuta', 'filtroEventoPrioridad', 'filtroEventoTipo'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  const busEl = document.getElementById('filtroEventoBus');
+  if (busEl) busEl.value = '';
+  cargarEventos();
 }
 
 async function poblarFiltroEventos() {
