@@ -23,6 +23,10 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Evento> findByTipoEvento(TipoEvento tipoEvento);
     List<Evento> findByTimestampBetween(LocalDateTime from, LocalDateTime to);
     long countByPrioridad(Prioridad prioridad);
+    List<Evento> findByAckEnviadoFalse();
+
+    @Query("SELECT e FROM Evento e WHERE e.bus.id = :busId ORDER BY e.timestamp DESC")
+    List<Evento> findByBusId(@Param("busId") String busId);
 
     @Query("SELECT e.ruta.id, AVG(e.bus.velocidad) FROM Evento e WHERE e.bus.velocidad IS NOT NULL GROUP BY e.ruta.id")
     List<Object[]> avgVelocidadPorRuta();

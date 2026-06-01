@@ -5,6 +5,7 @@ import com.sitmmio.dashboard.view.MapView;
 import com.sitmmio.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +19,7 @@ public class MapController {
     @Autowired private RutaRepository rutaRepo;
     @Autowired private EstacionRepository estacionRepo;
     @Autowired private EventoRepository eventoRepo;
+    @Autowired private SimpMessagingTemplate messagingTemplate;
 
     /** Todos los buses con su posición actual */
     @GetMapping("/buses")
@@ -106,5 +108,11 @@ public class MapController {
             "totalRutas", rutaRepo.count(),
             "totalEstaciones", estacionRepo.count()
         );
+    }
+
+    /** Notifica actualización de un bus por WebSocket (usado por BusTrackingService) */
+    public void actualizarBus(Bus bus) {
+        busRepo.save(bus);
+        messagingTemplate.convertAndSend("/topic/buses", MapView.fromBus(bus));
     }
 }

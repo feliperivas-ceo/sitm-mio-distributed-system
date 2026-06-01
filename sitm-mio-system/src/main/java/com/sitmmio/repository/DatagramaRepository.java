@@ -8,6 +8,8 @@ import java.util.Optional;
 
 @Repository
 public interface DatagramaRepository extends JpaRepository<Datagrama, Long> {
-    List<Datagrama> findByBusIdOrderByTimestampDesc(String busId);
-    Optional<Datagrama> findFirstByBusIdOrderByTimestampDesc(String busId);
+    List<Datagrama> findByIdBusOrderByTimestampDesc(String idBus);
+    Optional<Datagrama> findFirstByIdBusOrderByTimestampDesc(String idBus);
+    List<Datagrama> findByIdBus(String idBus);
+    List<Datagrama> findByProcesadoFalse();
 }

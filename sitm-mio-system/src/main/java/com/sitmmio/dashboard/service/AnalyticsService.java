@@ -78,4 +78,14 @@ public class AnalyticsService {
             "INACTIVO", inactivos
         );
     }
+
+    /** Resumen rápido para DashboardController de origin/main */
+    public Map<String, Object> obtenerEstadisticas() {
+        Map<String, Object> stats = new LinkedHashMap<>();
+        stats.put("busesActivos", busRepo.findByEstado("ACTIVO").size() + busRepo.findByEstado("EN_RUTA").size());
+        stats.put("eventosCriticos", eventoRepo.countByPrioridad(Prioridad.ALTA) + eventoRepo.countByPrioridad(Prioridad.CRITICA));
+        stats.put("totalBuses", busRepo.count());
+        stats.put("totalRutas", rutaRepo.count());
+        return stats;
+    }
 }

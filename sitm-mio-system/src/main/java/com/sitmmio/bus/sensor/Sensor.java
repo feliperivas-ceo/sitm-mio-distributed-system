@@ -1,5 +1,5 @@
 package com.sitmmio.bus.sensor;
 
-public class Sensor {
-    
+public interface Sensor<T> {
+    T leer();
 }
