@@ -113,6 +113,15 @@ public class MapController {
     /** Notifica actualización de un bus por WebSocket (usado por BusTrackingService) */
     public void actualizarBus(Bus bus) {
         busRepo.save(bus);
-        messagingTemplate.convertAndSend("/topic/buses", MapView.fromBus(bus));
+        messagingTemplate.convertAndSend("/topic/buses", List.of(MapView.fromBus(bus)));
+    }
+
+    /** Transmite la lista completa de buses por WebSocket (usado por BusTrackingService cada 5s) */
+    public void broadcastAllBuses() {
+        List<MapView> vista = busRepo.findAll().stream()
+            .filter(b -> b.getLatitud() != null && b.getLongitud() != null)
+            .map(MapView::fromBus)
+            .collect(Collectors.toList());
+        messagingTemplate.convertAndSend("/topic/buses", vista);
     }
 }

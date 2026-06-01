@@ -297,12 +297,14 @@ function mostrarUltimaActualizacion() {
 }
 
 function actualizarPosicionesBuses(actualizaciones) {
-  if (!Array.isArray(actualizaciones)) return;
-  actualizaciones.forEach(upd => {
+  const lista = Array.isArray(actualizaciones) ? actualizaciones : [actualizaciones];
+  lista.forEach(upd => {
+    const lat = upd.latitud ?? upd.lat;
+    const lon = upd.longitud ?? upd.lon;
     const entry = busMarkers[upd.id];
-    if (entry && upd.lat && upd.lon) {
-      entry.marker.setLatLng([upd.lat, upd.lon]);
-      entry.data = { ...entry.data, ...upd, latitud: upd.lat, longitud: upd.lon };
+    if (entry && lat && lon) {
+      entry.marker.setLatLng([lat, lon]);
+      entry.data = { ...entry.data, ...upd, latitud: lat, longitud: lon };
       // Actualizar ícono con nuevo color según estado
       const busActualizado = { ...entry.data, ultimoEvento: upd.ultimoEvento, prioridad: upd.prioridad };
       const color = colorBus(busActualizado);
