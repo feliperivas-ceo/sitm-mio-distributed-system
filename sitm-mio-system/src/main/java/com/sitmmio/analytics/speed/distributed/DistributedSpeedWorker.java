@@ -18,61 +18,72 @@ public class DistributedSpeedWorker {
     public Map<String, PartialSpeedResult> process(String datagramsPath,
                                                    Set<String> assignedRoutes) {
 
-        Map<String, List<SpeedRecord>> grouped = new HashMap<>();
+        Map<String, SpeedRecord> lastRecordByBusRoute = new HashMap<>();
+        Map<String, PartialSpeedResult> results = new TreeMap<>();
+
+        long readLines = 0;
+        long validRecords = 0;
+        long calculatedSpeeds = 0;
 
         try (BufferedReader reader = new BufferedReader(new FileReader(datagramsPath))) {
             String line;
 
             while ((line = reader.readLine()) != null) {
-                Optional<SpeedRecord> optional = parser.parse(line);
+                readLines++;
 
+                Optional<SpeedRecord> optional = parser.parse(line);
                 if (optional.isEmpty()) continue;
 
-                SpeedRecord record = optional.get();
+                SpeedRecord current = optional.get();
 
-                if (!assignedRoutes.contains(record.routeId())) continue;
+                if (!assignedRoutes.contains(current.routeId())) continue;
 
-                String key = record.busId() + "|" + record.routeId();
+                validRecords++;
 
-                grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(record);
+                String busRouteKey = current.busId() + "|" + current.routeId();
+
+                SpeedRecord previous = lastRecordByBusRoute.get(busRouteKey);
+
+                if (previous != null) {
+                    long seconds = Duration.between(previous.timestamp(), current.timestamp()).getSeconds();
+                    double meters = current.odometer() - previous.odometer();
+
+                    if (seconds > 0 && meters > 0) {
+                        double speedKmh = (meters / seconds) * 3.6;
+
+                        if (speedKmh > 0 && speedKmh <= 120) {
+                            String resultKey = current.routeId() + "|" + current.monthKey();
+
+                            PartialSpeedResult result = results.computeIfAbsent(
+                                    resultKey,
+                                    k -> new PartialSpeedResult(current.routeId(), current.monthKey())
+                            );
+
+                            result.add(speedKmh);
+                            calculatedSpeeds++;
+                        }
+                    }
+                }
+
+                lastRecordByBusRoute.put(busRouteKey, current);
+
+                if (readLines % 1_000_000 == 0) {
+                    System.out.println("Lineas leidas: " + readLines +
+                            " | validas: " + validRecords +
+                            " | velocidades: " + calculatedSpeeds +
+                            " | memoriaKeys: " + lastRecordByBusRoute.size());
+                }
             }
 
         } catch (Exception e) {
             throw new RuntimeException("Error procesando worker distribuido: " + e.getMessage(), e);
         }
 
-        return calculatePartialResults(grouped);
-    }
-
-    private Map<String, PartialSpeedResult> calculatePartialResults(Map<String, List<SpeedRecord>> grouped) {
-        Map<String, PartialSpeedResult> results = new TreeMap<>();
-
-        for (List<SpeedRecord> records : grouped.values()) {
-            records.sort(Comparator.comparing(SpeedRecord::timestamp));
-
-            for (int i = 1; i < records.size(); i++) {
-                SpeedRecord previous = records.get(i - 1);
-                SpeedRecord current = records.get(i);
-
-                long seconds = Duration.between(previous.timestamp(), current.timestamp()).getSeconds();
-                double meters = current.odometer() - previous.odometer();
-
-                if (seconds <= 0 || meters <= 0) continue;
-
-                double speedKmh = (meters / seconds) * 3.6;
-
-                if (speedKmh <= 0 || speedKmh > 120) continue;
-
-                String key = current.routeId() + "|" + current.monthKey();
-
-                PartialSpeedResult result = results.computeIfAbsent(
-                        key,
-                        k -> new PartialSpeedResult(current.routeId(), current.monthKey())
-                );
-
-                result.add(speedKmh);
-            }
-        }
+        System.out.println("Worker streaming finalizado.");
+        System.out.println("Lineas leidas: " + readLines);
+        System.out.println("Registros validos: " + validRecords);
+        System.out.println("Velocidades calculadas: " + calculatedSpeeds);
+        System.out.println("Resultados parciales: " + results.size());
 
         return results;
     }
@@ -80,7 +91,10 @@ public class DistributedSpeedWorker {
     public void writePartialResults(Map<String, PartialSpeedResult> results, String outputPath) {
         try {
             Path path = Path.of(outputPath);
-            Files.createDirectories(path.getParent());
+
+            if (path.getParent() != null) {
+                Files.createDirectories(path.getParent());
+            }
 
             try (PrintWriter writer = new PrintWriter(Files.newBufferedWriter(path))) {
                 writer.println("routeId,month,speedSum,count");
@@ -99,8 +113,6 @@ public class DistributedSpeedWorker {
         if (args.length < 3) {
             System.out.println("Uso:");
             System.out.println("java DistributedSpeedWorker <datagramsPath> <routesCommaSeparated> <outputPath>");
-            System.out.println("Ejemplo:");
-            System.out.println("java DistributedSpeedWorker /opt/sitm-mio/datagrams4Pilot.csv 131,140,2241 data/output/partial-worker-1.csv");
             return;
         }
 
