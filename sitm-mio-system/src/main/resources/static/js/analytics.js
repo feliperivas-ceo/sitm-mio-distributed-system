@@ -22,10 +22,15 @@ async function cargarAnalitica() {
     renderizarChartMeses(meses.eventosPorMes || {});
     renderizarChartBuses(buses);
     renderizarTablaRutas(rutas, velocidad.velocidadPorRuta || {}, resumen);
-  } catch (e) {
+    await cargarAnaliticaHistorica();
+  } 
+  
+  catch (e) {
     document.getElementById('kpiCards').innerHTML =
       '<div class="col-12"><div class="alert alert-warning">Error cargando datos de analítica</div></div>';
   }
+
+
 }
 
 function renderizarTablaRutas(rutas, velocidades, resumen) {
@@ -51,22 +56,59 @@ function renderizarTablaRutas(rutas, velocidades, resumen) {
 
 function renderizarKPIs(data) {
   const kpis = [
-    { label: 'Total Buses', valor: data.totalBuses, icono: 'bi-bus-front-fill', clase: 'primary' },
-    { label: 'Buses Activos', valor: data.busesActivos, icono: 'bi-activity', clase: 'success' },
-    { label: 'Total Eventos', valor: data.totalEventos, icono: 'bi-bell-fill', clase: 'warning' },
-    { label: 'Eventos Críticos', valor: data.eventosCriticos, icono: 'bi-exclamation-triangle-fill', clase: 'danger' },
-    { label: 'Total Rutas', valor: data.totalRutas, icono: 'bi-signpost-2-fill', clase: 'primary' }
+    {
+      label: 'Total de buses',
+      valor: data.totalBuses,
+      icono: 'bi-bus-front-fill',
+      clase: 'primary'
+    },
+    {
+      label: 'Buses activos',
+      valor: data.busesActivos,
+      icono: 'bi-activity',
+      clase: 'success'
+    },
+    {
+      label: 'Eventos recibidos',
+      valor: data.totalEventos,
+      icono: 'bi-bell-fill',
+      clase: 'warning'
+    },
+    {
+      label: 'Eventos críticos',
+      valor: data.eventosCriticos,
+      icono: 'bi-exclamation-triangle-fill',
+      clase: 'danger'
+    },
+    {
+      label: 'Rutas registradas',
+      valor: data.totalRutas,
+      icono: 'bi-signpost-2-fill',
+      clase: 'primary'
+    }
   ];
-  document.getElementById('kpiCards').innerHTML = kpis.map(k => `
-    <div class="col-md-2 col-sm-4 col-6">
-      <div class="card shadow-sm kpi-card ${k.clase} h-100">
-        <div class="card-body text-center py-3">
-          <i class="bi ${k.icono} fs-2 text-${k.clase}"></i>
-          <div class="fs-2 fw-bold mt-1">${k.valor ?? 0}</div>
-          <div class="text-muted small">${k.label}</div>
+
+  document.getElementById('kpiCards').innerHTML = kpis.map(kpi => `
+    <div class="col-xl col-lg-4 col-md-6 col-12">
+      <div class="card shadow-sm kpi-card ${kpi.clase} h-100">
+        <div class="card-body">
+          <div class="kpi-icon-wrapper ${kpi.clase}">
+            <i class="bi ${kpi.icono}"></i>
+          </div>
+
+          <div class="kpi-content">
+            <p class="kpi-value">
+              ${Number(kpi.valor ?? 0).toLocaleString('es-CO')}
+            </p>
+
+            <div class="kpi-label">
+              ${kpi.label}
+            </div>
+          </div>
         </div>
       </div>
-    </div>`).join('');
+    </div>
+  `).join('');
 }
 
 function renderizarChartVelocidad(datos) {
@@ -96,21 +138,46 @@ function renderizarChartVelocidad(datos) {
 
 function renderizarChartPrioridad(datos) {
   const ctx = document.getElementById('chartPrioridad');
+
   if (!ctx) return;
-  if (chartPrioridad) chartPrioridad.destroy();
+
+  if (chartPrioridad) {
+    chartPrioridad.destroy();
+  }
+
   chartPrioridad = new Chart(ctx, {
     type: 'doughnut',
+
     data: {
-      labels: ['Alta', 'Media', 'Baja'],
+      labels: ['Crítica', 'Alta', 'Media', 'Baja'],
+
       datasets: [{
-        data: [datos.ALTA || 0, datos.MEDIA || 0, datos.BAJA || 0],
-        backgroundColor: ['#E74C3C', '#F39C12', '#27AE60'],
+        data: [
+          datos.CRITICA || 0,
+          datos.ALTA || 0,
+          datos.MEDIA || 0,
+          datos.BAJA || 0
+        ],
+
+        backgroundColor: [
+          '#922B21',
+          '#E74C3C',
+          '#F39C12',
+          '#27AE60'
+        ],
+
         borderWidth: 2
       }]
     },
+
     options: {
       responsive: true,
-      plugins: { legend: { position: 'bottom' } }
+
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
     }
   });
 }
@@ -168,4 +235,194 @@ function renderizarChartBuses(datos) {
       plugins: { legend: { position: 'bottom' } }
     }
   });
+}
+// ===== Analítica histórica del experimento =====
+
+let chartVelocidadHistorica = null;
+
+async function cargarAnaliticaHistorica() {
+  const version =
+    document.getElementById('historicoVersion')?.value || 'concurrente';
+
+  const routeId =
+    document.getElementById('historicoRuta')?.value || '';
+
+  const month =
+    document.getElementById('historicoMes')?.value || '';
+
+  const params = new URLSearchParams({
+    version,
+    routeId,
+    month
+  });
+
+  try {
+    const [responseHistorico, responseBenchmark] = await Promise.all([
+      fetch(`/api/analytics/historico/velocidades?${params.toString()}`),
+      fetch('/api/analytics/historico/benchmark')
+    ]);
+
+    if (!responseHistorico.ok) {
+      throw new Error('No fue posible cargar el histórico');
+    }
+
+    const data = await responseHistorico.json();
+    const benchmark = responseBenchmark.ok
+      ? await responseBenchmark.json()
+      : {};
+
+    renderizarKPIsHistoricos(data, benchmark);
+    renderizarTablaHistorica(data.resultados || []);
+    renderizarGraficoHistorico(data.resultados || []);
+
+  } catch (error) {
+    console.error(error);
+
+    document.getElementById('historicoTable').innerHTML = `
+      <tr>
+        <td colspan="4"
+            class="text-center text-danger py-4">
+          No fue posible cargar los resultados históricos.
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function renderizarKPIsHistoricos(data, benchmark) {
+  const version = data.version || '-';
+
+  document.getElementById('historicoKpiVersion').textContent =
+    version;
+
+  document.getElementById('historicoKpiResultados').textContent =
+    Number(data.cantidadResultados || 0)
+      .toLocaleString('es-CO');
+
+  document.getElementById('historicoKpiRegistros').textContent =
+    Number(data.totalRegistros || 0)
+      .toLocaleString('es-CO');
+
+  let tiempo = '-';
+
+  if (version === 'monolitico') {
+    tiempo =
+      `${benchmark.monolitico?.tiempoMs ?? '-'} ms`;
+  }
+
+  if (version === 'concurrente') {
+    tiempo =
+      `${benchmark.concurrente?.tiempoMs ?? '-'} ms · ` +
+      `${benchmark.concurrente?.speedup ?? '-'}x`;
+  }
+
+  if (version === 'distribuido') {
+    tiempo =
+      `Worker máximo: ` +
+      `${benchmark.distribuido?.worker2TiempoMs ?? '-'} ms`;
+  }
+
+  document.getElementById('historicoKpiTiempo').textContent =
+    tiempo;
+}
+
+function renderizarTablaHistorica(resultados) {
+  const tbody = document.getElementById('historicoTable');
+
+  if (!tbody) return;
+
+  if (!resultados.length) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="4"
+            class="text-center text-muted py-4">
+          No existen resultados para los filtros seleccionados.
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tbody.innerHTML = resultados.map(row => `
+    <tr>
+      <td>
+        <span class="badge bg-primary">
+          ${row.routeId}
+        </span>
+      </td>
+
+      <td>${row.month}</td>
+
+      <td>
+        ${Number(row.averageSpeedKmh).toFixed(2)} km/h
+      </td>
+
+      <td>
+        ${Number(row.count).toLocaleString('es-CO')}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderizarGraficoHistorico(resultados) {
+  const ctx =
+    document.getElementById('chartVelocidadHistorica');
+
+  if (!ctx) return;
+
+  if (chartVelocidadHistorica) {
+    chartVelocidadHistorica.destroy();
+  }
+
+  const muestra = resultados.slice(0, 30);
+
+  chartVelocidadHistorica = new Chart(ctx, {
+    type: 'bar',
+
+    data: {
+      labels: muestra.map(row =>
+        `${row.routeId} · ${row.month}`
+      ),
+
+      datasets: [{
+        label: 'Velocidad promedio (km/h)',
+
+        data: muestra.map(row =>
+          row.averageSpeedKmh
+        ),
+
+        backgroundColor: '#3498DB',
+        borderRadius: 5
+      }]
+    },
+
+    options: {
+      responsive: true,
+
+      plugins: {
+        legend: {
+          display: false
+        }
+      },
+
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+}
+
+function limpiarFiltrosHistoricos() {
+  document.getElementById('historicoVersion').value =
+    'concurrente';
+
+  document.getElementById('historicoRuta').value =
+    '';
+
+  document.getElementById('historicoMes').value =
+    '';
+
+  cargarAnaliticaHistorica();
 }

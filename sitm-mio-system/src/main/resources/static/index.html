@@ -115,6 +115,7 @@
             <option value="ALTA">Alta</option>
             <option value="MEDIA">Media</option>
             <option value="BAJA">Baja</option>
+            <option value="CRITICA">Crítica</option>
           </select>
           <select id="filtroEstado" class="form-select form-select-sm" style="width:130px" onchange="aplicarFiltros()">
             <option value="">Todo estado</option>
@@ -253,52 +254,256 @@
             </div>
           </div>
         </div>
+        <!-- ===== ANALÍTICA HISTÓRICA DEL EXPERIMENTO ===== -->
+<div class="mt-5">
+
+  <div class="mb-3">
+    <h4 class="mb-1">
+      <i class="bi bi-database-fill-gear me-2 text-primary"></i>
+      Resultados históricos del experimento
+    </h4>
+
+    <p class="text-muted small">
+      Consulta las velocidades promedio calculadas por ruta y mes mediante las
+      implementaciones monolítica, concurrente y distribuida.
+    </p>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="d-flex gap-2 align-items-center flex-wrap">
+
+        <select id="historicoVersion"
+                class="form-select form-select-sm historico-filter">
+          <option value="monolitico">Monolítica</option>
+          <option value="concurrente" selected>Concurrente</option>
+          <option value="distribuido">Distribuida</option>
+        </select>
+
+        <input id="historicoRuta"
+               class="form-control form-control-sm historico-filter"
+               placeholder="Ruta: ejemplo 131"/>
+
+        <input id="historicoMes"
+               class="form-control form-control-sm historico-filter"
+               placeholder="Mes: ejemplo 2019-05"/>
+
+        <button class="btn btn-sm btn-primary"
+                onclick="cargarAnaliticaHistorica()">
+          <i class="bi bi-search me-1"></i>
+          Consultar
+        </button>
+
+        <button class="btn btn-sm btn-outline-secondary"
+                onclick="limpiarFiltrosHistoricos()">
+          <i class="bi bi-x-circle me-1"></i>
+          Limpiar
+        </button>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs históricos -->
+  <div class="row g-3 mb-3">
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small">Versión seleccionada</div>
+          <div id="historicoKpiVersion"
+               class="fw-bold fs-5 text-primary">
+            -
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small">Resultados ruta-mes</div>
+          <div id="historicoKpiResultados"
+               class="fw-bold fs-5">
+            0
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small">Registros analizados</div>
+          <div id="historicoKpiRegistros"
+               class="fw-bold fs-5">
+            0
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3">
+      <div class="card shadow-sm border-0 h-100">
+        <div class="card-body">
+          <div class="text-muted small">Tiempo de referencia</div>
+          <div id="historicoKpiTiempo"
+               class="fw-bold fs-5">
+            -
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Gráfico histórico -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-header bg-white fw-bold">
+      <i class="bi bi-bar-chart-line-fill me-2 text-primary"></i>
+      Velocidad promedio por ruta y mes
+    </div>
+
+    <div class="card-body">
+      <canvas id="chartVelocidadHistorica"
+              height="110"></canvas>
+    </div>
+  </div>
+
+  <!-- Tabla histórica -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-bold">
+      <i class="bi bi-table me-2 text-primary"></i>
+      Resultados consolidados
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive historico-table-container">
+
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-dark historico-table-header">
+          <tr>
+            <th>Ruta</th>
+            <th>Mes</th>
+            <th>Velocidad promedio</th>
+            <th>Registros utilizados</th>
+          </tr>
+          </thead>
+
+          <tbody id="historicoTable"></tbody>
+        </table>
+
+      </div>
+    </div>
+  </div>
+
+</div>
       </div>
 
       <!-- TAB: HISTORIAL DE EVENTOS -->
-      <div id="tabEventos" class="tab-content p-4 d-none">
-        <h4><i class="bi bi-clock-history me-2 text-primary"></i>Historial de Eventos</h4>
-        <div class="d-flex gap-2 mb-3 flex-wrap align-items-center">
-          <select id="filtroEventoRuta" class="form-select form-select-sm" style="width:140px">
-            <option value="">Todas las rutas</option>
-          </select>
-          <select id="filtroEventoPrioridad" class="form-select form-select-sm" style="width:130px">
-            <option value="">Toda prioridad</option>
-            <option value="ALTA">🔴 Alta</option>
-            <option value="MEDIA">🟡 Media</option>
-            <option value="BAJA">🟢 Baja</option>
-          </select>
-          <select id="filtroEventoTipo" class="form-select form-select-sm" style="width:140px">
-            <option value="">Todo tipo</option>
-            <option value="GPS_NORMAL">GPS Normal</option>
-            <option value="CONGESTION">Congestión</option>
-            <option value="ACCIDENTE">Accidente</option>
-            <option value="MOTOR">Motor</option>
-            <option value="PUERTAS">Puertas</option>
-          </select>
-          <input id="filtroEventoBus" class="form-control form-control-sm" style="width:120px" placeholder="ID Bus...">
-          <button class="btn btn-sm btn-primary" onclick="cargarEventos()">
-            <i class="bi bi-search"></i> Filtrar
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" onclick="limpiarFiltrosEventos()">
-            <i class="bi bi-x-circle"></i> Limpiar
-          </button>
-        </div>
-        <div class="table-responsive">
-          <table class="table table-hover align-middle table-sm">
-            <thead class="table-dark">
-              <tr>
-                <th>Fecha</th><th>Bus</th><th>Ruta</th><th>Tipo Evento</th>
-                <th>Prioridad</th><th>Lat</th><th>Lon</th><th>Procesado</th>
-              </tr>
-            </thead>
-            <tbody id="eventosTable"></tbody>
-          </table>
-        </div>
-        <div id="eventosEmpty" class="text-center text-muted py-4 d-none">
-          <i class="bi bi-inbox display-4"></i><p class="mt-2">Sin eventos registrados</p>
-        </div>
+      <!-- TAB: HISTORIAL DE EVENTOS -->
+<div id="tabEventos" class="tab-content p-4 d-none">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h4 class="mb-1">
+        <i class="bi bi-clock-history me-2 text-primary"></i>
+        Historial de Eventos
+      </h4>
+
+      <p class="text-muted small mb-0">
+        Consulta los eventos registrados por ruta, bus, prioridad y tipo.
+      </p>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card shadow-sm border-0 mb-3">
+    <div class="card-body">
+      <div class="d-flex gap-2 flex-wrap align-items-center">
+
+        <select id="filtroEventoRuta"
+                class="form-select form-select-sm historial-filter">
+          <option value="">Todas las rutas</option>
+        </select>
+
+        <select id="filtroEventoPrioridad"
+                class="form-select form-select-sm historial-filter">
+          <option value="">Toda prioridad</option>
+          <option value="CRITICA">🚨 Crítica</option>
+          <option value="ALTA">🔴 Alta</option>
+          <option value="MEDIA">🟡 Media</option>
+          <option value="BAJA">🟢 Baja</option>
+        </select>
+
+        <select id="filtroEventoTipo"
+                class="form-select form-select-sm historial-filter">
+          <option value="">Todo tipo</option>
+          <option value="POSICION_GPS">GPS</option>
+          <option value="CONGESTION">Congestión</option>
+          <option value="ACCIDENTE">Accidente</option>
+          <option value="FALLA_MOTOR">Falla de motor</option>
+          <option value="PUERTAS">Puertas</option>
+          <option value="PINCHAZO">Pinchazo</option>
+        </select>
+
+        <input id="filtroEventoBus"
+               class="form-control form-control-sm historial-filter"
+               placeholder="ID del bus"/>
+
+        <button class="btn btn-sm btn-primary"
+                onclick="cargarEventos()">
+          <i class="bi bi-search me-1"></i>
+          Filtrar
+        </button>
+
+        <button class="btn btn-sm btn-outline-secondary"
+                onclick="limpiarFiltrosEventos()">
+          <i class="bi bi-x-circle me-1"></i>
+          Limpiar
+        </button>
+
       </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="card shadow-sm border-0">
+    <div class="card-header bg-white fw-bold py-3">
+      <i class="bi bi-table me-2 text-primary"></i>
+      Eventos registrados
+    </div>
+
+    <div class="card-body p-0">
+      <div class="table-responsive historial-table-container">
+        <table class="table table-hover table-sm align-middle mb-0">
+          <thead class="table-dark historial-table-header">
+          <tr>
+            <th>Fecha</th>
+            <th>Bus</th>
+            <th>Ruta</th>
+            <th>Tipo de evento</th>
+            <th>Prioridad</th>
+            <th>Latitud</th>
+            <th>Longitud</th>
+            <th>Procesado</th>
+          </tr>
+          </thead>
+
+          <tbody id="eventosTable"></tbody>
+        </table>
+      </div>
+
+      <div id="eventosEmpty"
+           class="text-center text-muted py-5 d-none">
+        <i class="bi bi-inbox display-4"></i>
+        <p class="mt-2 mb-0">No se encontraron eventos</p>
+      </div>
+    </div>
+  </div>
+
+</div>
 
     </div><!-- fin contenido principal -->
   </div><!-- fin d-flex -->

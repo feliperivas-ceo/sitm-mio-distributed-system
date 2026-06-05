@@ -17,7 +17,9 @@ public class AnalyticsService {
         long totalBuses = busRepo.count();
         long busesActivos = busRepo.findByEstado("ACTIVO").size() + busRepo.findByEstado("EN_RUTA").size();
         long totalEventos = eventoRepo.count();
-        long eventosCriticos = eventoRepo.countByPrioridad(Prioridad.ALTA);
+       long eventosCriticos =
+        eventoRepo.countByPrioridad(Prioridad.ALTA)
+        + eventoRepo.countByPrioridad(Prioridad.CRITICA);;
         long totalRutas = rutaRepo.count();
 
         return Map.of(
@@ -60,11 +62,18 @@ public class AnalyticsService {
     }
 
     public Map<String, Object> eventosCriticos() {
-        long alta  = eventoRepo.countByPrioridad(Prioridad.ALTA);
-        long media = eventoRepo.countByPrioridad(Prioridad.MEDIA);
-        long baja  = eventoRepo.countByPrioridad(Prioridad.BAJA);
-        return Map.of("ALTA", alta, "MEDIA", media, "BAJA", baja);
-    }
+    long critica = eventoRepo.countByPrioridad(Prioridad.CRITICA);
+    long alta    = eventoRepo.countByPrioridad(Prioridad.ALTA);
+    long media   = eventoRepo.countByPrioridad(Prioridad.MEDIA);
+    long baja    = eventoRepo.countByPrioridad(Prioridad.BAJA);
+
+    return Map.of(
+            "CRITICA", critica,
+            "ALTA", alta,
+            "MEDIA", media,
+            "BAJA", baja
+    );
+}
 
     public Map<String, Object> busesActivos() {
         long activos   = busRepo.findByEstado("ACTIVO").size();

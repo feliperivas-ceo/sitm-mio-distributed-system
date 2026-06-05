@@ -1,199 +1,405 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html lang="es">
 <head>
-    <title>CCO SITM-MIO</title>
+    <meta charset="UTF-8">
+    <title>Centro de Control SITM-MIO</title>
 
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+    <link rel="stylesheet"
+          href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
         body {
             margin: 0;
-            font-family: 'Segoe UI', Arial, sans-serif;
-            display: flex;
-            height: 100vh;
-            background-color: #eef2f5;
+            font-family: "Segoe UI", Arial, sans-serif;
+            background: #eef2f5;
+        }
+
+        header {
+            background: #17324d;
+            color: white;
+            padding: 18px 25px;
+        }
+
+        nav {
+            background: white;
+            padding: 12px 25px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+
+        .active {
+            background: #0052cc;
+            color: white;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            height: calc(100vh - 120px);
         }
 
         #map {
-            height: 100vh;
-            width: 75%;
+            height: 100%;
         }
 
         #panel {
-            width: 25%;
-            padding: 25px;
-            background: #ffffff;
+            padding: 20px;
+            background: white;
             overflow-y: auto;
-            box-shadow: -4px 0 15px rgba(0,0,0,0.05);
-            box-sizing: border-box;
-            z-index: 1000;
-        }
-
-        h2 {
-            color: #2c3e50;
-            margin-top: 0;
-            border-bottom: 2px solid #f1f3f5;
-            padding-bottom: 15px;
-            font-size: 1.5rem;
         }
 
         .event {
             background: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
+            padding: 12px;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-            transition: transform 0.2s;
         }
 
-        .event:hover {
-            transform: translateY(-2px);
-        }
-
-        .event h4 {
-            margin: 0 0 5px 0;
-            color: #333;
-        }
-
-        .event p {
-            margin: 0;
-            font-size: 0.9em;
-            color: #666;
-        }
-
-        .high { border-left: 5px solid #ff4d4d; }
-        .medium { border-left: 5px solid #ffaa00; }
         .low { border-left: 5px solid #2ecc71; }
+        .medium { border-left: 5px solid #ffaa00; }
+        .high { border-left: 5px solid #ff4d4d; }
+
+        .analytics {
+            padding: 25px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        select, input {
+            padding: 9px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+
+        .table-container {
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        canvas {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            max-height: 320px;
+        }
     </style>
 </head>
 
 <body>
 
-<div id="map"></div>
+<header>
+    <h2>Centro de Control SITM-MIO</h2>
+</header>
 
-<div id="panel">
-    <h2>Centro de Control MIO</h2>
-    <div id="events"></div>
-</div>
+<nav>
+    <button id="btnMapa"
+            class="active"
+            onclick="mostrarSeccion('mapa')">
+        Monitoreo en tiempo real
+    </button>
+
+    <button id="btnAnalitica"
+            onclick="mostrarSeccion('analitica')">
+        Analítica histórica
+    </button>
+</nav>
+
+<section id="seccionMapa">
+    <div class="layout">
+        <div id="map"></div>
+
+        <aside id="panel">
+            <h3>Eventos recientes</h3>
+            <div id="events"></div>
+        </aside>
+    </div>
+</section>
+
+<section id="seccionAnalitica" class="analytics hidden">
+
+    <h2>Velocidades promedio por ruta y mes</h2>
+
+    <div class="filters">
+        <select id="version">
+            <option value="monolitico">Monolítica</option>
+            <option value="concurrente" selected>Concurrente</option>
+            <option value="distribuido">Distribuida</option>
+        </select>
+
+        <input id="routeId"
+               placeholder="Ruta: ejemplo 131"/>
+
+        <input id="month"
+               placeholder="Mes: ejemplo 2019-05"/>
+
+        <button class="active"
+                onclick="cargarHistorico()">
+            Consultar
+        </button>
+    </div>
+
+    <div class="kpis">
+        <div class="card">
+            <strong>Versión</strong>
+            <div id="kpiVersion">-</div>
+        </div>
+
+        <div class="card">
+            <strong>Resultados</strong>
+            <div id="kpiResultados">0</div>
+        </div>
+
+        <div class="card">
+            <strong>Registros analizados</strong>
+            <div id="kpiRegistros">0</div>
+        </div>
+
+        <div class="card">
+            <strong>Tiempo de referencia</strong>
+            <div id="kpiTiempo">-</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <canvas id="chartVelocidad"></canvas>
+    </div>
+
+    <div class="card table-container">
+        <table>
+            <thead>
+            <tr>
+                <th>Ruta</th>
+                <th>Mes</th>
+                <th>Velocidad promedio</th>
+                <th>Registros</th>
+            </tr>
+            </thead>
+
+            <tbody id="tablaHistorica"></tbody>
+        </table>
+    </div>
+
+</section>
 
 <script>
+    function mostrarSeccion(seccion) {
+        const mapa = document.getElementById("seccionMapa");
+        const analitica = document.getElementById("seccionAnalitica");
 
-    // 1. INICIALIZAR EL MAPA
-    const map = L.map('map').setView([3.4516, -76.5320], 12);
+        const btnMapa = document.getElementById("btnMapa");
+        const btnAnalitica = document.getElementById("btnAnalitica");
 
-    // Renderizado de mapa base (OpenStreetMap estándar)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap'
-    }).addTo(map);
+        mapa.classList.toggle("hidden", seccion !== "mapa");
+        analitica.classList.toggle("hidden", seccion !== "analitica");
 
-    // 2. CONFIGURACIÓN DEL ICONO PERSONALIZADO (BUS MIO)
-    // He usado un icono de bus azul estilizado. Si tienes un archivo propio (ej. 'bus_mio.png'), cambia la URL aquí.
-    const mioBusIcon = L.icon({
-        iconUrl: 'https://cdn-icons-png.flaticon.com/512/3448/3448339.png', 
-        iconSize: [38, 38], // Tamaño del icono en pixeles
-        iconAnchor: [19, 19], // Punto del icono que corresponderá a la coordenada del mapa (centro)
-        popupAnchor: [0, -15] // Punto desde donde se abrirá el popup en relación al anchor
-    });
+        btnMapa.classList.toggle("active", seccion === "mapa");
+        btnAnalitica.classList.toggle("active", seccion === "analitica");
 
-    // 3. COORDENADAS DETALLADAS (Sigue las calles reales: Cra 1 -> Centro -> Calle 5)
-    const routeCoordinates = [
-        // Viene por la Carrera 1 (Norte)
-        [3.4673, -76.5021], // Terminal Andrés Sanín / Conexión
-        [3.4615, -76.5095], 
-        [3.4560, -76.5165], 
-        [3.4532, -76.5212], // Cra 1 con Cl 34
-        [3.4510, -76.5245], // Cra 1 con Cl 25
-        [3.4491, -76.5273], // Estación Torre de Cali
-        
-        // Giro en la Calle 15 (Centro)
-        [3.4475, -76.5295], 
-        [3.4442, -76.5321], // Cl 15 con Cra 5
-        [3.4431, -76.5338], // Cerca a la Estación San Pedro
+        if (seccion === "analitica") {
+            cargarHistorico();
+        }
+    }
 
-        // Conexión hacia la Calle 5
-        [3.4445, -76.5365], // Giro hacia la Calle 5 / Comfenalco
-        [3.4462, -76.5391], // Entrada a la Calle 5 (Estación Santa Librada)
-        
-        // Tramo recto de la Calle 5 (Hacia el Sur)
-        [3.4402, -76.5428], // Estación Manzana del Saber
-        [3.4354, -76.5458], // Estación Estadio
-        [3.4312, -76.5485], // Estación Tequendama
-        [3.4248, -76.5524], // Estación Lido
-        [3.4182, -76.5565]  // Estación Pampalinda / Plaza de Toros
-    ];
+    const map = L.map("map")
+        .setView([3.4516, -76.5320], 12);
 
-    // DIBUJAR RUTA (Efecto Troncal: Línea azul viva y definida)
-    const routeLine = L.polyline(routeCoordinates, {
-        color: '#0052cc', // Azul institucional/vivo
-        weight: 7,
-        opacity: 0.85,
-        lineJoin: 'round'
-    }).addTo(map);
-
-    // Ajustar mapa automáticamente al trazado de la ruta
-    map.fitBounds(routeLine.getBounds(), { padding: [30, 30] });
-
-    // 4. DIBUJAR ESTACIONES/PARADAS (Estilo círculos limpios con borde como la primera imagen)
-    routeCoordinates.forEach((station, index) => {
-        L.circleMarker(station, {
-            radius: 5,
-            color: '#ffffff',      // Borde blanco
-            weight: 2,
-            fillColor: '#d35400',  // Color naranja/rojo para que resalte la parada (como los cuadrados de la img 1)
-            fillOpacity: 1
-        })
-        .addTo(map)
-        .bindPopup("<b>Estación:</b> " + (index + 1));
-    });
-
-    // 5. CONFIGURACIÓN DE LOS BUSES ACTIVO
-    const buses = [
-        { id: "MIO-BUS-01 (Línea T31)", position: 0 },
-        { id: "MIO-BUS-02 (Línea E21)", position: 3 }
-    ];
+    L.tileLayer(
+        "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+    ).addTo(map);
 
     const markers = {};
 
-    // CREAR E INICIALIZAR LOS BUSES CON EL NUEVO ICONO
-    buses.forEach(bus => {
-        markers[bus.id] = L.marker(routeCoordinates[bus.position], { icon: mioBusIcon })
-            .addTo(map)
-            .bindPopup(`<b>Vehículo:</b> ${bus.id}`);
-    });
+    const socket = new WebSocket(
+        `ws://${window.location.host}/bus-monitor`
+    );
 
-    // 6. ANIMACIÓN/MOVIMIENTO EN TIEMPO REAL COHERENTE SOBRE LA RUTA
-    setInterval(() => {
-        buses.forEach(bus => {
-            bus.position++;
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
 
-            if(bus.position >= routeCoordinates.length) {
-                bus.position = 0;
-            }
+        const position = [data.lat, data.lon];
 
-            // Actualiza la posición suavemente en el mapa
-            markers[bus.id].setLatLng(routeCoordinates[bus.position]);
-        });
-    }, 4000); // Se mueve cada 4 segundos
+        if (markers[data.busId]) {
+            markers[data.busId].setLatLng(position);
+        } else {
+            markers[data.busId] =
+                L.marker(position)
+                    .addTo(map)
+                    .bindPopup("Bus: " + data.busId);
+        }
+    };
 
-    // 7. PANEL DE EVENTOS LATERAL
     const events = [
         { type: "GPS actualizado", priority: "low" },
         { type: "Puertas abiertas", priority: "medium" },
         { type: "Motor averiado", priority: "high" }
     ];
 
-    const container = document.getElementById("events");
-
-    events.forEach(e => {
-        container.innerHTML += `
-            <div class="event ${e.priority}">
-                <h4>${e.type}</h4>
-                <p>Prioridad: ${e.priority.toUpperCase()}</p>
+    document.getElementById("events").innerHTML =
+        events.map(event => `
+            <div class="event ${event.priority}">
+                <strong>${event.type}</strong>
+                <p>Prioridad: ${event.priority.toUpperCase()}</p>
             </div>
-        `;
-    });
+        `).join("");
 
+    let chartVelocidad = null;
+
+    async function cargarHistorico() {
+        const version = document.getElementById("version").value;
+        const routeId = document.getElementById("routeId").value;
+        const month = document.getElementById("month").value;
+
+        const query = new URLSearchParams({
+            version,
+            routeId,
+            month
+        });
+
+        try {
+            const response = await fetch(
+                `/api/analytics/historico/velocidades?${query}`
+            );
+
+            const data = await response.json();
+
+            document.getElementById("kpiVersion").textContent =
+                data.version;
+
+            document.getElementById("kpiResultados").textContent =
+                data.cantidadResultados;
+
+            document.getElementById("kpiRegistros").textContent =
+                Number(data.totalRegistros).toLocaleString();
+
+            await cargarTiempoReferencia(version);
+
+            renderizarTabla(data.resultados);
+            renderizarGrafico(data.resultados);
+
+        } catch (error) {
+            alert("No fue posible cargar los resultados históricos.");
+        }
+    }
+
+    async function cargarTiempoReferencia(version) {
+        const response = await fetch(
+            "/api/analytics/historico/benchmark"
+        );
+
+        const benchmark = await response.json();
+
+        let texto = "-";
+
+        if (version === "monolitico") {
+            texto = `${benchmark.monolitico.tiempoMs} ms`;
+        }
+
+        if (version === "concurrente") {
+            texto =
+                `${benchmark.concurrente.tiempoMs} ms · ` +
+                `${benchmark.concurrente.speedup}x`;
+        }
+
+        if (version === "distribuido") {
+            texto =
+                `Worker máximo: ` +
+                `${benchmark.distribuido.worker2TiempoMs} ms`;
+        }
+
+        document.getElementById("kpiTiempo").textContent = texto;
+    }
+
+    function renderizarTabla(resultados) {
+        const tbody = document.getElementById("tablaHistorica");
+
+        tbody.innerHTML = resultados.map(row => `
+            <tr>
+                <td>${row.routeId}</td>
+                <td>${row.month}</td>
+                <td>${row.averageSpeedKmh.toFixed(2)} km/h</td>
+                <td>${Number(row.count).toLocaleString()}</td>
+            </tr>
+        `).join("");
+    }
+
+    function renderizarGrafico(resultados) {
+        const ctx =
+            document.getElementById("chartVelocidad");
+
+        if (chartVelocidad) {
+            chartVelocidad.destroy();
+        }
+
+        const primeros = resultados.slice(0, 25);
+
+        chartVelocidad = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: primeros.map(row =>
+                    `${row.routeId} · ${row.month}`
+                ),
+                datasets: [{
+                    label: "Velocidad promedio (km/h)",
+                    data: primeros.map(row =>
+                        row.averageSpeedKmh
+                    )
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
 </script>
 
 </body>

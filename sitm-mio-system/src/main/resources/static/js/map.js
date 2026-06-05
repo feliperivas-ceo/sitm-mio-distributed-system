@@ -68,7 +68,7 @@ async function cargarDatosMapa() {
 
 async function cargarBuses(params = {}) {
   try {
-    let url = '/api/buses';
+    let url = '/api/buses/filter';
     const qs = new URLSearchParams(params).toString();
     if (qs) url += '?' + qs;
     const res = await fetch(url);
@@ -360,9 +360,13 @@ async function aplicarFiltros() {
   if (tipoEvento) params.tipoEvento = tipoEvento;
 
   try {
-    let url = '/api/buses';
-    const qs = new URLSearchParams(params).toString();
-    if (qs) url += '?' + qs;
+    let url = '/api/buses/filter';
+
+const qs = new URLSearchParams(params).toString();
+
+if (qs) {
+  url += '?' + qs;
+}
     const res = await fetch(url);
     let buses = await res.json();
 

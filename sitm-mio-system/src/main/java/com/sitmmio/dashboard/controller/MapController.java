@@ -71,9 +71,10 @@ public class MapController {
     @GetMapping("/buses/alertas")
     public List<MapView> getBusesEnAlerta() {
         return busRepo.findAll().stream()
-            .filter(b -> b.getPrioridad() == Prioridad.ALTA
-                || b.getUltimoEvento() == TipoEvento.ACCIDENTE
-                || b.getUltimoEvento() == TipoEvento.CONGESTION)
+            .filter(b -> b.getPrioridad() == Prioridad.CRITICA
+    || b.getPrioridad() == Prioridad.ALTA
+    || b.getUltimoEvento() == TipoEvento.ACCIDENTE
+    || b.getUltimoEvento() == TipoEvento.CONGESTION)
             .map(MapView::fromBus)
             .collect(Collectors.toList());
     }

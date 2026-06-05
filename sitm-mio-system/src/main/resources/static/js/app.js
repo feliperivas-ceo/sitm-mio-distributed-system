@@ -4,7 +4,31 @@ let currentUser = null;
 let currentTab = 'mapa';
 let zonas = [];
 let rutas = [];
+// ===== Cola de notificaciones laterales =====
 
+const colaNotificaciones = [];
+let eliminandoNotificaciones = false;
+
+function programarEliminacionNotificaciones() {
+  if (eliminandoNotificaciones || colaNotificaciones.length === 0) {
+    return;
+  }
+
+  eliminandoNotificaciones = true;
+
+  setTimeout(() => {
+    const toast = colaNotificaciones.shift();
+
+    if (toast && toast.parentElement) {
+      toast.remove();
+    }
+
+    eliminandoNotificaciones = false;
+
+    // Continúa con la siguiente alerta de la cola
+    programarEliminacionNotificaciones();
+  }, 2000);
+}
 // --- Autenticación ---
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -669,10 +693,13 @@ function mostrarAlertaCritica(bus) {
     <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>`;
   container.prepend(toast);
 
-  // Autolimpieza: 8s para accidentes, 12s para otros
-  const duracion = titulo === 'ACCIDENTE' ? 8000 : 12000;
-  setTimeout(() => { if (toast.parentElement) toast.remove(); }, duracion);
-}
+  // Autolimpieza rápida: todas las alertas duran 2 segundos
+const duracion = 2000;
+
+// Se elimina una alerta cada 2 segundos,
+// respetando el orden en que fueron recibidas.
+colaNotificaciones.push(toast);
+programarEliminacionNotificaciones();
 
 function clasificarAlerta(bus) {
   const evento = bus.ultimoEvento;
@@ -763,4 +790,4 @@ checkSession();
 // Actualizar contador de alertas cada 10 segundos cuando está autenticado
 setInterval(() => {
   if (currentUser) actualizarContadorAlertas();
-}, 10000);
+}, 10000);}
